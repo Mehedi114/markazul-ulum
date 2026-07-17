@@ -5,47 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>মারকাযুল উলুম ক্যাডেট স্কুল ও মাদ্রাসা, পারেরহাট</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
 
 <!-- Top Bar -->
 <div class="top-bar">
-    <div class="container">
-        <span><i class="fas fa-phone"></i> +৮৮০১XXXXXXXXX</span>
-        <span><i class="fas fa-envelope"></i> info@markazululum.edu.bd</span>
-        <a href="admin.html" class="admin-link"><i class="fas fa-lock"></i> অ্যাডমিন</a>
+    <div class="container top-flex">
+        <div class="top-left">
+            <span><i class="fas fa-phone"></i> <span id="topPhone">+৮৮০১XXXXXXXXX</span></span>
+            <span><i class="fas fa-envelope"></i> <span id="topEmail">info@markazululum.edu.bd</span></span>
+        </div>
+        <div class="top-right">
+            <a href="admin.html" class="admin-link"><i class="fas fa-lock"></i> অ্যাডমিন</a>
+        </div>
     </div>
 </div>
 
 <!-- Header -->
-<header class="header">
+<header class="header" id="siteHeader">
     <div class="container header-content">
-        <img src="logo.png" alt="Logo" class="logo" onerror="this.style.display='none'">
+        <img src="" alt="Logo" class="logo" id="siteLogo" onerror="this.style.display='none'">
         <div class="header-text">
-            <h1>মারকাযুল উলুম ক্যাডেট স্কুল ও মাদ্রাসা</h1>
-            <h2>Markazul Ulum Cadet School & Madrasa</h2>
-            <p>পারেরহাট | Parerhat</p>
+            <h1 id="siteNameBn">মারকাযুল উলুম ক্যাডেট স্কুল ও মাদ্রাসা</h1>
+            <h2 id="siteNameEn">Markazul Ulum Cadet School & Madrasa</h2>
+            <p id="siteLocation">পারেরহাট | Parerhat</p>
         </div>
-        <img src="logo.png" alt="Logo" class="logo" onerror="this.style.display='none'">
+        <img src="" alt="Logo" class="logo logo-right" id="siteLogo2" onerror="this.style.display='none'">
     </div>
 </header>
 
 <!-- Navigation -->
 <nav class="navbar">
     <div class="container">
-        <button class="nav-toggle" onclick="toggleNav()">☰ মেনু</button>
+        <button class="nav-toggle" onclick="toggleNav()">☰ মেনু | Menu</button>
         <ul class="nav-menu" id="navMenu">
-            <li><a href="#home" class="active">হোম</a></li>
-            <li><a href="#about">পরিচিতি</a></li>
-            <li><a href="#notices">নোটিশ</a></li>
-            <li><a href="#students">শিক্ষার্থী</a></li>
-            <li><a href="#results">ফলাফল</a></li>
-            <li><a href="#toppers">মেধা তালিকা</a></li>
-            <li><a href="#teachers">শিক্ষকমণ্ডলী</a></li>
-            <li><a href="#gallery">গ্যালারি</a></li>
-            <li><a href="#contact">যোগাযোগ</a></li>
+            <li><a href="#home">🏠 হোম</a></li>
+            <li><a href="#about">📖 পরিচিতি</a></li>
+            <li><a href="#notices">📢 নোটিশ</a></li>
+            <li><a href="#students">👨‍🎓 শিক্ষার্থী</a></li>
+            <li><a href="#results">📝 ফলাফল</a></li>
+            <li><a href="#toppers">🏆 মেধা তালিকা</a></li>
+            <li><a href="#teachers">👨‍🏫 শিক্ষকমণ্ডলী</a></li>
+            <li><a href="#gallery">🖼️ গ্যালারি</a></li>
+            <li><a href="#contact">📞 যোগাযোগ</a></li>
         </ul>
     </div>
 </nav>
@@ -53,96 +57,96 @@
 <!-- Hero Section -->
 <section id="home" class="hero">
     <div class="hero-overlay">
-        <div class="container">
-            <h1>স্বাগতম | Welcome</h1>
-            <p>মারকাযুল উলুম ক্যাডেট স্কুল ও মাদ্রাসা, পারেরহাট</p>
-            <p>ইলম, আমল ও আখলাকের সমন্বয়ে গড়ে তুলছি আগামীর প্রজন্ম</p>
-            <p class="english">Building Tomorrow's Generation with Knowledge, Practice & Character</p>
-            <a href="#about" class="btn">আরও জানুন</a>
+        <div class="container hero-center">
+            <h1 id="heroTitle">স্বাগতম | Welcome</h1>
+            <p id="heroSubtitle" class="hero-sub">মারকাযুল উলুম ক্যাডেট স্কুল ও মাদ্রাসা, পারেরহাট</p>
+            <p id="heroSlogan" class="hero-slogan">ইলম, আমল ও আখলাকের সমন্বয়ে গড়ে তুলছি আগামীর প্রজন্ম</p>
+            <p id="heroSloganEn" class="hero-slogan-en">Building Tomorrow's Generation with Knowledge, Practice & Character</p>
+            <a href="#about" class="btn btn-hero">আরও জানুন | Learn More</a>
         </div>
     </div>
 </section>
 
-<!-- Marquee Notice -->
+<!-- Marquee -->
 <div class="marquee-bar">
-    <span class="marquee-label">📢 বিজ্ঞপ্তি:</span>
-    <marquee id="marqueeNotice" behavior="scroll" direction="left" scrollamount="5">
+    <span class="marquee-label"><i class="fas fa-bullhorn"></i> বিজ্ঞপ্তি:</span>
+    <marquee id="marqueeNotice" behavior="scroll" direction="left" scrollamount="4">
         সর্বশেষ বিজ্ঞপ্তি লোড হচ্ছে...
     </marquee>
 </div>
 
-<!-- About Section -->
+<!-- About -->
 <section id="about" class="section">
     <div class="container">
         <h2 class="section-title">প্রতিষ্ঠান পরিচিতি | About Us</h2>
         <div class="about-grid">
             <div class="about-card">
                 <i class="fas fa-school"></i>
-                <h3>আমাদের প্রতিষ্ঠান</h3>
-                <p>মারকাযুল উলুম ক্যাডেট স্কুল ও মাদ্রাসা পারেরহাটে অবস্থিত একটি আদর্শ শিক্ষা প্রতিষ্ঠান। এখানে আধুনিক ও দ্বীনি শিক্ষার সমন্বয়ে শিক্ষার্থীদের গড়ে তোলা হয়।</p>
-                <p class="english">Markazul Ulum Cadet School & Madrasa is an ideal educational institution located in Parerhat, combining modern and Islamic education.</p>
+                <h3>আমাদের প্রতিষ্ঠান | Our Institution</h3>
+                <p id="aboutText1">মারকাযুল উলুম ক্যাডেট স্কুল ও মাদ্রাসা পারেরহাটে অবস্থিত একটি আদর্শ শিক্ষা প্রতিষ্ঠান। এখানে আধুনিক ও দ্বীনি শিক্ষার সমন্বয়ে শিক্ষার্থীদের গড়ে তোলা হয়।</p>
             </div>
             <div class="about-card">
                 <i class="fas fa-bullseye"></i>
-                <h3>আমাদের লক্ষ্য</h3>
-                <p>দ্বীনি ইলম ও আধুনিক জ্ঞানের সমন্বয়ে যোগ্য, আদর্শবান ও দেশপ্রেমিক নাগরিক তৈরি করা।</p>
-                <p class="english">To create competent, ideal and patriotic citizens combining Islamic and modern knowledge.</p>
+                <h3>আমাদের লক্ষ্য | Our Mission</h3>
+                <p id="aboutText2">দ্বীনি ইলম ও আধুনিক জ্ঞানের সমন্বয়ে যোগ্য, আদর্শবান ও দেশপ্রেমিক নাগরিক তৈরি করা।</p>
             </div>
             <div class="about-card">
                 <i class="fas fa-star"></i>
-                <h3>বৈশিষ্ট্য</h3>
-                <p>অভিজ্ঞ শিক্ষকমণ্ডলী, সুশৃঙ্খল পরিবেশ, নিয়মিত পরীক্ষা ও মূল্যায়ন, সহশিক্ষা কার্যক্রম।</p>
-                <p class="english">Experienced teachers, disciplined environment, regular exams & co-curricular activities.</p>
+                <h3>বৈশিষ্ট্য | Features</h3>
+                <p id="aboutText3">অভিজ্ঞ শিক্ষকমণ্ডলী, সুশৃঙ্খল পরিবেশ, নিয়মিত পরীক্ষা ও মূল্যায়ন, সহশিক্ষা কার্যক্রম।</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Stat Counter -->
+<!-- Stats -->
 <section class="stats-section">
     <div class="container stats-grid">
         <div class="stat-card">
             <i class="fas fa-user-graduate"></i>
             <h3 id="statStudents">০</h3>
-            <p>মোট শিক্ষার্থী | Total Students</p>
+            <p>মোট শিক্ষার্থী<br>Total Students</p>
         </div>
         <div class="stat-card">
             <i class="fas fa-chalkboard-teacher"></i>
             <h3 id="statTeachers">০</h3>
-            <p>শিক্ষকমণ্ডলী | Teachers</p>
+            <p>শিক্ষকমণ্ডলী<br>Teachers</p>
         </div>
         <div class="stat-card">
             <i class="fas fa-layer-group"></i>
             <h3 id="statClasses">১০</h3>
-            <p>মোট ক্লাস | Classes</p>
+            <p>মোট ক্লাস<br>Classes</p>
         </div>
         <div class="stat-card">
             <i class="fas fa-trophy"></i>
-            <h3 id="statResults">১০০%</h3>
-            <p>পাসের হার | Pass Rate</p>
+            <h3 id="statPassRate">১০০%</h3>
+            <p>পাসের হার<br>Pass Rate</p>
         </div>
     </div>
 </section>
 
-<!-- Notice Section -->
-<section id="notices" class="section section-alt">
+<!-- Notices -->
+<section id="notices" class="section bg-light">
     <div class="container">
         <h2 class="section-title">নোটিশ বোর্ড | Notice Board</h2>
         <div id="noticeList" class="notice-list">
-            <p>নোটিশ লোড হচ্ছে...</p>
+            <div class="loading">লোড হচ্ছে... | Loading...</div>
         </div>
     </div>
 </section>
 
-<!-- Student Search Section -->
+<!-- Students -->
 <section id="students" class="section">
     <div class="container">
         <h2 class="section-title">শিক্ষার্থীর তথ্য | Student Information</h2>
         <div class="search-box">
-            <h3>শিক্ষার্থী খুঁজুন | Search Student</h3>
+            <h3><i class="fas fa-search"></i> শিক্ষার্থী খুঁজুন | Search Student</h3>
             <div class="search-form">
                 <select id="searchClass">
-                    <option value="">ক্লাস নির্বাচন করুন</option>
+                    <option value="">ক্লাস | Class</option>
+                    <option value="Play">প্লে | Play</option>
+                    <option value="Nursery">নার্সারি | Nursery</option>
+                    <option value="KG">কেজি | KG</option>
                     <option value="1">ক্লাস ১ | Class 1</option>
                     <option value="2">ক্লাস ২ | Class 2</option>
                     <option value="3">ক্লাস ৩ | Class 3</option>
@@ -154,23 +158,27 @@
                     <option value="9">ক্লাস ৯ | Class 9</option>
                     <option value="10">ক্লাস ১০ | Class 10</option>
                 </select>
-                <input type="text" id="searchName" placeholder="নাম লিখুন | Enter name">
-                <input type="text" id="searchRoll" placeholder="রোল নম্বর | Roll number">
-                <button onclick="searchStudents()" class="btn">খুঁজুন | Search</button>
+                <input type="text" id="searchName" placeholder="নাম | Name">
+                <input type="text" id="searchRoll" placeholder="রোল | Roll">
+                <button onclick="searchStudents()" class="btn"><i class="fas fa-search"></i> খুঁজুন</button>
             </div>
         </div>
-        <div id="studentResults" class="student-results"></div>
+        <div id="studentResults" class="student-grid"></div>
     </div>
 </section>
 
-<!-- Results Section -->
-<section id="results" class="section section-alt">
+<!-- Results -->
+<section id="results" class="section bg-light">
     <div class="container">
         <h2 class="section-title">পরীক্ষার ফলাফল | Exam Results</h2>
         <div class="search-box">
+            <h3><i class="fas fa-clipboard-list"></i> ফলাফল দেখুন | View Result</h3>
             <div class="search-form">
                 <select id="resultClass">
-                    <option value="">ক্লাস নির্বাচন | Select Class</option>
+                    <option value="">ক্লাস | Class</option>
+                    <option value="Play">প্লে</option>
+                    <option value="Nursery">নার্সারি</option>
+                    <option value="KG">কেজি</option>
                     <option value="1">ক্লাস ১</option>
                     <option value="2">ক্লাস ২</option>
                     <option value="3">ক্লাস ৩</option>
@@ -183,27 +191,32 @@
                     <option value="10">ক্লাস ১০</option>
                 </select>
                 <select id="resultExam">
-                    <option value="">পরীক্ষা নির্বাচন | Select Exam</option>
+                    <option value="">পরীক্ষা | Exam</option>
                     <option value="1st-term">প্রথম সাময়িক | 1st Term</option>
                     <option value="mid-term">অর্ধবার্ষিক | Mid Term</option>
                     <option value="final">বার্ষিক | Final</option>
+                    <option value="test">টেস্ট | Test</option>
                 </select>
-                <input type="text" id="resultRoll" placeholder="রোল নম্বর | Roll">
-                <button onclick="searchResults()" class="btn">ফলাফল দেখুন | View Result</button>
+                <input type="text" id="resultRoll" placeholder="রোল | Roll">
+                <button onclick="searchResults()" class="btn"><i class="fas fa-search"></i> দেখুন</button>
             </div>
         </div>
-        <div id="resultDisplay" class="result-display"></div>
+        <div id="resultDisplay"></div>
     </div>
 </section>
 
-<!-- Toppers Section -->
+<!-- Toppers -->
 <section id="toppers" class="section">
     <div class="container">
-        <h2 class="section-title">মেধা তালিকা | Top Students (প্রতি ক্লাসে প্রথম ৩)</h2>
+        <h2 class="section-title">🏆 মেধা তালিকা | Top Students</h2>
+        <p class="section-subtitle">প্রতি ক্লাসে প্রথম ৩ জন | Top 3 in Each Class</p>
         <div class="search-box">
             <div class="search-form">
                 <select id="topperClass" onchange="loadToppers()">
-                    <option value="">ক্লাস নির্বাচন করুন | Select Class</option>
+                    <option value="">ক্লাস | Class</option>
+                    <option value="Play">প্লে</option>
+                    <option value="Nursery">নার্সারি</option>
+                    <option value="KG">কেজি</option>
                     <option value="1">ক্লাস ১</option>
                     <option value="2">ক্লাস ২</option>
                     <option value="3">ক্লাস ৩</option>
@@ -216,56 +229,61 @@
                     <option value="10">ক্লাস ১০</option>
                 </select>
                 <select id="topperExam" onchange="loadToppers()">
-                    <option value="">পরীক্ষা নির্বাচন | Select Exam</option>
+                    <option value="">পরীক্ষা | Exam</option>
                     <option value="1st-term">প্রথম সাময়িক</option>
                     <option value="mid-term">অর্ধবার্ষিক</option>
                     <option value="final">বার্ষিক</option>
+                    <option value="test">টেস্ট</option>
                 </select>
             </div>
         </div>
-        <div id="topperDisplay" class="topper-display"></div>
+        <div id="topperDisplay" class="topper-grid"></div>
     </div>
 </section>
 
-<!-- Teachers Section -->
-<section id="teachers" class="section section-alt">
+<!-- Teachers -->
+<section id="teachers" class="section bg-light">
     <div class="container">
         <h2 class="section-title">শিক্ষকমণ্ডলী | Our Teachers</h2>
         <div id="teacherList" class="teacher-grid">
-            <p>শিক্ষকদের তথ্য লোড হচ্ছে...</p>
+            <div class="loading">লোড হচ্ছে...</div>
         </div>
     </div>
 </section>
 
-<!-- Gallery Section -->
+<!-- Gallery -->
 <section id="gallery" class="section">
     <div class="container">
         <h2 class="section-title">ফটো গ্যালারি | Photo Gallery</h2>
         <div id="galleryGrid" class="gallery-grid">
-            <p>ফটো লোড হচ্ছে...</p>
+            <div class="loading">লোড হচ্ছে...</div>
         </div>
     </div>
 </section>
 
-<!-- Contact Section -->
-<section id="contact" class="section section-alt">
+<!-- Contact -->
+<section id="contact" class="section bg-light">
     <div class="container">
         <h2 class="section-title">যোগাযোগ | Contact Us</h2>
         <div class="contact-grid">
-            <div class="contact-info">
-                <h3>যোগাযোগের ঠিকানা</h3>
-                <p><i class="fas fa-map-marker-alt"></i> মারকাযুল উলুম ক্যাডেট স্কুল ও মাদ্রাসা, পারেরহাট</p>
-                <p><i class="fas fa-phone"></i> +৮৮০১XXXXXXXXX</p>
-                <p><i class="fas fa-envelope"></i> info@markazululum.edu.bd</p>
-                <h3 style="margin-top:20px;">Address</h3>
-                <p>Markazul Ulum Cadet School & Madrasa, Parerhat</p>
+            <div class="contact-card">
+                <h3><i class="fas fa-map-marker-alt"></i> ঠিকানা | Address</h3>
+                <p id="contactAddress">মারকাযুল উলুম ক্যাডেট স্কুল ও মাদ্রাসা, পারেরহাট</p>
+                <br>
+                <h3><i class="fas fa-phone"></i> ফোন | Phone</h3>
+                <p id="contactPhone">+৮৮০১XXXXXXXXX</p>
+                <br>
+                <h3><i class="fas fa-envelope"></i> ইমেইল | Email</h3>
+                <p id="contactEmail">info@markazululum.edu.bd</p>
+                <br>
+                <div id="contactMap"></div>
             </div>
-            <div class="contact-form">
-                <h3>মেসেজ পাঠান | Send Message</h3>
+            <div class="contact-card">
+                <h3><i class="fas fa-paper-plane"></i> মেসেজ পাঠান | Send Message</h3>
                 <input type="text" id="msgName" placeholder="আপনার নাম | Your Name">
-                <input type="text" id="msgPhone" placeholder="ফোন নম্বর | Phone">
-                <textarea id="msgText" placeholder="আপনার মেসেজ | Your Message" rows="4"></textarea>
-                <button onclick="sendMessage()" class="btn">পাঠান | Send</button>
+                <input type="text" id="msgPhone" placeholder="ফোন | Phone">
+                <textarea id="msgText" rows="4" placeholder="মেসেজ | Message"></textarea>
+                <button onclick="sendMessage()" class="btn btn-full"><i class="fas fa-paper-plane"></i> পাঠান | Send</button>
                 <p id="msgStatus"></p>
             </div>
         </div>
@@ -276,34 +294,39 @@
 <footer class="footer">
     <div class="container">
         <div class="footer-grid">
-            <div>
-                <h3>মারকাযুল উলুম ক্যাডেট স্কুল ও মাদ্রাসা</h3>
+            <div class="footer-col">
+                <h3 id="footerName">মারকাযুল উলুম ক্যাডেট স্কুল ও মাদ্রাসা</h3>
                 <p>Markazul Ulum Cadet School & Madrasa</p>
                 <p>পারেরহাট | Parerhat</p>
             </div>
-            <div>
+            <div class="footer-col">
                 <h3>গুরুত্বপূর্ণ লিংক</h3>
-                <a href="#about">পরিচিতি</a>
-                <a href="#notices">নোটিশ</a>
-                <a href="#results">ফলাফল</a>
-                <a href="#contact">যোগাযোগ</a>
+                <a href="#about">পরিচিতি | About</a>
+                <a href="#notices">নোটিশ | Notices</a>
+                <a href="#results">ফলাফল | Results</a>
+                <a href="#contact">যোগাযোগ | Contact</a>
             </div>
-            <div>
-                <h3>Important Links</h3>
-                <a href="#students">Student Info</a>
-                <a href="#toppers">Merit List</a>
-                <a href="#teachers">Teachers</a>
-                <a href="#gallery">Gallery</a>
+            <div class="footer-col">
+                <h3>আরও লিংক</h3>
+                <a href="#students">শিক্ষার্থী | Students</a>
+                <a href="#toppers">মেধা তালিকা | Toppers</a>
+                <a href="#teachers">শিক্ষক | Teachers</a>
+                <a href="#gallery">গ্যালারি | Gallery</a>
             </div>
         </div>
         <div class="footer-bottom">
-            <p>© ২০২৫ মারকাযুল উলুম ক্যাডেট স্কুল ও মাদ্রাসা, পারেরহাট। সর্বস্বত্ব সংরক্ষিত।</p>
-            <p>© 2025 Markazul Ulum Cadet School & Madrasa, Parerhat. All rights reserved.</p>
+            <p id="footerText">© ২০২৫ মারকাযুল উলুম ক্যাডেট স্কুল ও মাদ্রাসা, পারেরহাট। সর্বস্বত্ব সংরক্ষিত।</p>
         </div>
     </div>
 </footer>
 
-<!-- Firebase -->
+<!-- Image Modal -->
+<div id="imageModal" class="modal" onclick="this.style.display='none'">
+    <img id="modalImg" src="">
+    <p id="modalCaption"></p>
+</div>
+
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
