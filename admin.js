@@ -15,6 +15,75 @@ const db = firebase.firestore();
 const auth = firebase.auth();
 
 // ============================================
+// IMGBB API KEY - PHOTO UPLOAD
+// ============================================
+const IMGBB_API_KEY = "b2ca23b16c7cdc5b0e3f3d0420ba606f";
+
+async function uploadPhotoToImgBB(file, statusElId, hiddenInputId, previewId) {
+    const statusEl = document.getElementById(statusElId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+    const preview = document.getElementById(previewId);
+
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+        statusEl.textContent = '❌ ছবির সাইজ ৫MB এর কম হতে হবে!';
+        statusEl.style.color = '#c62828';
+        return;
+    }
+
+    statusEl.textContent = '⏳ আপলোড হচ্ছে... অপেক্ষা করুন...';
+    statusEl.style.color = '#1976d2';
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            const imageUrl = data.data.url;
+            hiddenInput.value = imageUrl;
+            preview.src = imageUrl;
+            preview.style.display = 'block';
+            statusEl.textContent = '✅ ছবি সফলভাবে আপলোড হয়েছে!';
+            statusEl.style.color = '#2e7d32';
+        } else {
+            statusEl.textContent = '❌ আপলোড ব্যর্থ!';
+            statusEl.style.color = '#c62828';
+        }
+    } catch (err) {
+        console.error(err);
+        statusEl.textContent = '❌ আপলোড সমস্যা! Internet check করুন।';
+        statusEl.style.color = '#c62828';
+    }
+}
+
+function uploadStudentPhoto(input) {
+    uploadPhotoToImgBB(input.files[0], 'stuPhotoStatus', 'stuPhoto', 'stuPhotoPreview');
+}
+
+function uploadTeacherPhoto(input) {
+    uploadPhotoToImgBB(input.files[0], 'tchPhotoStatus', 'tchPhoto', 'tchPhotoPreview');
+}
+
+function uploadGalleryPhoto(input) {
+    uploadPhotoToImgBB(input.files[0], 'galPhotoStatus', 'galURL', 'galPhotoPreview');
+}
+
+function uploadEditStudentPhoto(input) {
+    uploadPhotoToImgBB(input.files[0], 'editStuPhotoStatus', 'editStuPhoto', 'editStuPhotoPreview');
+}
+
+function uploadEditTeacherPhoto(input) {
+    uploadPhotoToImgBB(input.files[0], 'editTchPhotoStatus', 'editTchPhoto', 'editTchPhotoPreview');
+}
+
+// ============================================
 // AUTH
 // ============================================
 function adminLogin() {
@@ -176,6 +245,9 @@ function addStudent() {
     db.collection('students').add(data).then(() => {
         msg.textContent = '✅ শিক্ষার্থী যোগ হয়েছে!'; msg.className = 'msg-success';
         ['stuNameBn','stuName','stuRoll','stuFather','stuMother','stuPhone','stuAddress','stuPhoto'].forEach(id => document.getElementById(id).value = '');
+                document.getElementById('stuPhotoFile').value = '';
+        document.getElementById('stuPhotoPreview').style.display = 'none';
+        document.getElementById('stuPhotoStatus').textContent = '';
     }).catch(e => { msg.textContent = '❌ সমস্যা!'; msg.className = 'msg-error'; });
 }
 
@@ -186,15 +258,109 @@ function loadAdminStudents() {
     div.innerHTML = '<p style="color:#888;">লোড হচ্ছে...</p>';
     db.collection('students').where('class', '==', cls).get().then(snap => {
         if (snap.empty) { div.innerHTML = '<p style="color:#888;">কোনো শিক্ষার্থী নেই</p>'; return; }
-        let html = '<table class="data-table"><thead><tr><th>রোল</th><th>নাম</th><th>পিতা</th><th>ফোন</th><th>মুছুন</th></tr></thead><tbody>';
+        
+        let students = [];
         snap.forEach(doc => {
             const s = doc.data();
-            html += `<tr><td>${s.roll||''}</td><td>${s.nameBn||s.name||''}</td><td>${s.fatherName||'-'}</td><td>${s.phone||'-'}</td><td><button class="btn-delete" onclick="deleteDoc('students','${doc.id}',loadAdminStudents)">🗑️</button></td></tr>`;
+            s.id = doc.id;
+            students.push(s);
+        });
+        students.sort((a, b) => (parseInt(a.roll)||0) - (parseInt(b.roll)||0));
+        
+        let html = '<table class="data-table"><thead><tr><th>রোল</th><th>নাম</th><th>পিতা</th><th>ফোন</th><th>এডিট</th><th>মুছুন</th></tr></thead><tbody>';
+        students.forEach(s => {
+            html += `<tr>
+                <td>${s.roll||''}</td>
+                <td>${s.nameBn||s.name||''}</td>
+                <td>${s.fatherName||'-'}</td>
+                <td>${s.phone||'-'}</td>
+                <td><button class="btn-edit" onclick="editStudent('${s.id}')">✏️</button></td>
+                <td><button class="btn-delete" onclick="deleteDoc('students','${s.id}',loadAdminStudents)">🗑️</button></td>
+            </tr>`;
         });
         div.innerHTML = html + '</tbody></table>';
     });
 }
 
+// ============================================
+// STUDENT EDIT
+// ============================================
+function editStudent(id) {
+    db.collection('students').doc(id).get().then(doc => {
+        if (!doc.exists) return;
+        const s = doc.data();
+        
+        const classOpts = ['Play','Nursery','KG','1','2','3','4','5','6','7','8','9','10'];
+        const classNames = {'Play':'প্লে','Nursery':'নার্সারি','KG':'কেজি','1':'ক্লাস ১','2':'ক্লাস ২','3':'ক্লাস ৩','4':'ক্লাস ৪','5':'ক্লাস ৫','6':'ক্লাস ৬','7':'ক্লাস ৭','8':'ক্লাস ৮','9':'ক্লাস ৯','10':'ক্লাস ১০'};
+        let classOptions = '';
+        classOpts.forEach(c => {
+            classOptions += `<option value="${c}" ${s.class===c?'selected':''}>${classNames[c]}</option>`;
+        });
+        
+        const bloods = ['A+','A-','B+','B-','AB+','AB-','O+','O-'];
+        let bloodOptions = '<option value="">নির্বাচন</option>';
+        bloods.forEach(b => {
+            bloodOptions += `<option value="${b}" ${s.blood===b?'selected':''}>${b}</option>`;
+        });
+        
+        document.getElementById('editModalTitle').textContent = '✏️ শিক্ষার্থী এডিট করুন';
+        document.getElementById('editModalBody').innerHTML = `
+            <div class="form-row">
+                <div class="form-group"><label>নাম (বাংলা)</label><input type="text" id="editStuNameBn" value="${s.nameBn||''}"></div>
+                <div class="form-group"><label>Name (English)</label><input type="text" id="editStuName" value="${s.name||''}"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>ক্লাস</label><select id="editStuClass">${classOptions}</select></div>
+                <div class="form-group"><label>রোল</label><input type="text" id="editStuRoll" value="${s.roll||''}"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>পিতা</label><input type="text" id="editStuFather" value="${s.fatherName||''}"></div>
+                <div class="form-group"><label>মাতা</label><input type="text" id="editStuMother" value="${s.motherName||''}"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>জন্ম তারিখ</label><input type="date" id="editStuDOB" value="${s.dob||''}"></div>
+                <div class="form-group"><label>ফোন</label><input type="text" id="editStuPhone" value="${s.phone||''}"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>ঠিকানা</label><input type="text" id="editStuAddress" value="${s.address||''}"></div>
+                <div class="form-group"><label>রক্ত</label><select id="editStuBlood">${bloodOptions}</select></div>
+            </div>
+            <div class="form-group">
+                <label>📷 নতুন ছবি আপলোড (না দিলে আগেরটাই থাকবে)</label>
+                <input type="file" id="editStuPhotoFile" accept="image/*" onchange="uploadEditStudentPhoto(this)" style="padding:10px;border:2px dashed #2d8a4e;border-radius:6px;background:#f0f7f0;cursor:pointer;width:100%;">
+                <p id="editStuPhotoStatus" style="margin-top:5px;font-size:13px;"></p>
+                <input type="hidden" id="editStuPhoto" value="${s.photo||''}">
+                <img id="editStuPhotoPreview" src="${s.photo||''}" style="${s.photo?'display:block':'display:none'};max-width:120px;margin-top:10px;border-radius:8px;border:2px solid #2d8a4e;">
+            </div>
+            <button onclick="saveEditStudent('${id}')" class="btn" style="margin-top:10px;">💾 আপডেট করুন</button>
+            <p id="editStuMsg"></p>
+        `;
+        document.getElementById('editModal').style.display = 'flex';
+    });
+}
+
+function saveEditStudent(id) {
+    const msg = document.getElementById('editStuMsg');
+    const data = {
+        nameBn: document.getElementById('editStuNameBn').value.trim(),
+        name: document.getElementById('editStuName').value.trim(),
+        class: document.getElementById('editStuClass').value,
+        roll: document.getElementById('editStuRoll').value.trim(),
+        fatherName: document.getElementById('editStuFather').value.trim(),
+        motherName: document.getElementById('editStuMother').value.trim(),
+        dob: document.getElementById('editStuDOB').value,
+        phone: document.getElementById('editStuPhone').value.trim(),
+        address: document.getElementById('editStuAddress').value.trim(),
+        blood: document.getElementById('editStuBlood').value,
+        photo: document.getElementById('editStuPhoto').value.trim()
+    };
+    msg.textContent = 'সেভ হচ্ছে...'; msg.style.color = '#888';
+    db.collection('students').doc(id).update(data).then(() => {
+        msg.textContent = '✅ আপডেট হয়েছে!'; msg.style.color = '#2e7d32';
+        loadAdminStudents();
+        setTimeout(() => closeEditModal(), 1500);
+    }).catch(e => { msg.textContent = '❌ সমস্যা!'; msg.style.color = '#c62828'; });
+}
 // ============================================
 // ★★★ QUICK RESULT - Student list থেকে দ্রুত ★★★
 // ============================================
@@ -400,6 +566,9 @@ function addTeacher() {
     db.collection('teachers').add(data).then(() => {
         msg.textContent = '✅ শিক্ষক যোগ হয়েছে!'; msg.className = 'msg-success';
         ['tchNameBn','tchName','tchDesignation','tchSubject','tchPhone','tchPhoto'].forEach(id => document.getElementById(id).value = '');
+                document.getElementById('tchPhotoFile').value = '';
+        document.getElementById('tchPhotoPreview').style.display = 'none';
+        document.getElementById('tchPhotoStatus').textContent = '';
         loadAdminTeachers();
     }).catch(e => { msg.textContent = '❌ সমস্যা!'; msg.className = 'msg-error'; });
 }
@@ -445,7 +614,13 @@ function editTeacher(id) {
                 <div class="form-group"><label>ফোন</label><input type="text" id="editTchPhone" value="${t.phone||''}"></div>
                 <div class="form-group"><label>ক্রম</label><input type="number" id="editTchOrder" value="${t.order||1}" min="1"></div>
             </div>
-            <div class="form-group"><label>ছবির লিংক</label><input type="text" id="editTchPhoto" value="${t.photo||''}"></div>
+            <div class="form-group">
+                <label>📷 নতুন ছবি আপলোড (না দিলে আগেরটাই থাকবে)</label>
+                <input type="file" id="editTchPhotoFile" accept="image/*" onchange="uploadEditTeacherPhoto(this)" style="padding:10px;border:2px dashed #2d8a4e;border-radius:6px;background:#f0f7f0;cursor:pointer;width:100%;">
+                <p id="editTchPhotoStatus" style="margin-top:5px;font-size:13px;"></p>
+                <input type="hidden" id="editTchPhoto" value="${t.photo||''}">
+                <img id="editTchPhotoPreview" src="${t.photo||''}" style="${t.photo?'display:block':'display:none'};max-width:120px;margin-top:10px;border-radius:8px;border:2px solid #2d8a4e;">
+            </div>
             <button onclick="saveEditTeacher('${id}')" class="btn" style="margin-top:10px;">💾 আপডেট করুন</button>
             <p id="editTchMsg"></p>
         `;
@@ -485,7 +660,11 @@ function addGallery() {
     if (!url) { msg.textContent = 'লিংক দিন!'; msg.className = 'msg-error'; return; }
     db.collection('gallery').add({ url, caption, date: new Date().toISOString(), timestamp: firebase.firestore.FieldValue.serverTimestamp() }).then(() => {
         msg.textContent = '✅ ফটো যোগ হয়েছে!'; msg.className = 'msg-success';
-        document.getElementById('galURL').value = ''; document.getElementById('galCaption').value = '';
+              document.getElementById('galURL').value = '';
+        document.getElementById('galCaption').value = '';
+        document.getElementById('galPhotoFile').value = '';
+        document.getElementById('galPhotoPreview').style.display = 'none';
+        document.getElementById('galPhotoStatus').textContent = '';
         loadAdminGallery();
     }).catch(e => { msg.textContent = '❌ সমস্যা!'; msg.className = 'msg-error'; });
 }
