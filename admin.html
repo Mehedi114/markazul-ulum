@@ -138,57 +138,67 @@
         </div>
 
         <!-- STUDENT -->
-        <div id="tabStudent" class="tab-panel">
-            <div class="admin-card">
-                <h3><i class="fas fa-user-plus"></i> শিক্ষার্থী যোগ করুন</h3>
-                <div class="form-row">
-                    <div class="form-group"><label>নাম (বাংলা)</label><input type="text" id="stuNameBn"></div>
-                    <div class="form-group"><label>Name (English)</label><input type="text" id="stuName"></div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>ক্লাস</label>
-                        <select id="stuClass">
-                            <option value="Play">প্লে</option><option value="Nursery">নার্সারি</option><option value="KG">কেজি</option>
-                            <option value="1">ক্লাস ১</option><option value="2">ক্লাস ২</option><option value="3">ক্লাস ৩</option>
-                            <option value="4">ক্লাস ৪</option><option value="5">ক্লাস ৫</option><option value="6">ক্লাস ৬</option>
-                            <option value="7">ক্লাস ৭</option><option value="8">ক্লাস ৮</option><option value="9">ক্লাস ৯</option>
-                            <option value="10">ক্লাস ১০</option>
-                        </select>
-                    </div>
-                    <div class="form-group"><label>রোল</label><input type="text" id="stuRoll"></div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group"><label>পিতা</label><input type="text" id="stuFather"></div>
-                    <div class="form-group"><label>মাতা</label><input type="text" id="stuMother"></div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group"><label>জন্ম তারিখ</label><input type="date" id="stuDOB"></div>
-                    <div class="form-group"><label>ফোন</label><input type="text" id="stuPhone"></div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group"><label>ঠিকানা</label><input type="text" id="stuAddress"></div>
-                    <div class="form-group">
-                        <label>রক্তের গ্রুপ</label>
-                        <select id="stuBlood"><option value="">নির্বাচন</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select>
-                    </div>
-                </div>
-                <div class="form-group"><label>ছবির লিংক</label><input type="text" id="stuPhoto" placeholder="https://i.ibb.co/..."></div>
-                <button onclick="addStudent()" class="btn">➕ শিক্ষার্থী যোগ করুন</button>
-                <p id="stuMsg"></p>
-            </div>
-            <div class="admin-card">
-                <h3><i class="fas fa-users"></i> শিক্ষার্থী তালিকা</h3>
-                <select id="viewStuClass" onchange="loadAdminStudents()" style="padding:10px;border:2px solid #ddd;border-radius:6px;font-family:inherit;">
-                    <option value="">ক্লাস নির্বাচন</option>
+<div id="tabStudent" class="tab-panel">
+    <div class="admin-card">
+        <h3><i class="fas fa-user-plus"></i> শিক্ষার্থী যোগ করুন</h3>
+        <div class="form-row">
+            <div class="form-group"><label>নাম (বাংলা)</label><input type="text" id="stuNameBn"></div>
+            <div class="form-group"><label>Name (English)</label><input type="text" id="stuName"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>ক্লাস</label>
+                <select id="stuClass">
                     <option value="Play">প্লে</option><option value="Nursery">নার্সারি</option><option value="KG">কেজি</option>
-                    <option value="1">১</option><option value="2">২</option><option value="3">৩</option><option value="4">৪</option>
-                    <option value="5">৫</option><option value="6">৬</option><option value="7">৭</option><option value="8">৮</option>
-                    <option value="9">৯</option><option value="10">১০</option>
+                    <option value="1">ক্লাস ১</option><option value="2">ক্লাস ২</option><option value="3">ক্লাস ৩</option>
+                    <option value="4">ক্লাস ৪</option><option value="5">ক্লাস ৫</option><option value="6">ক্লাস ৬</option>
+                    <option value="7">ক্লাস ৭</option><option value="8">ক্লাস ৮</option><option value="9">ক্লাস ৯</option>
+                    <option value="10">ক্লাস ১০</option>
                 </select>
-                <div id="adminStudentList"></div>
+            </div>
+            <div class="form-group"><label>রোল</label><input type="text" id="stuRoll"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>পিতা</label><input type="text" id="stuFather"></div>
+            <div class="form-group"><label>মাতা</label><input type="text" id="stuMother"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>জন্ম তারিখ</label><input type="date" id="stuDOB"></div>
+            <div class="form-group"><label>ফোন</label><input type="text" id="stuPhone"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>ঠিকানা</label><input type="text" id="stuAddress"></div>
+            <div class="form-group">
+                <label>রক্তের গ্রুপ</label>
+                <select id="stuBlood"><option value="">নির্বাচন</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select>
             </div>
         </div>
+        
+        <!-- ★★★ DIRECT PHOTO UPLOAD ★★★ -->
+        <div class="form-group">
+            <label>📷 ছবি আপলোড করুন (Computer থেকে সরাসরি)</label>
+            <input type="file" id="stuPhotoFile" accept="image/*" onchange="uploadStudentPhoto(this)" style="padding:10px;border:2px dashed #2d8a4e;border-radius:6px;background:#f0f7f0;cursor:pointer;width:100%;">
+            <p id="stuPhotoStatus" style="margin-top:5px;font-size:13px;"></p>
+            <input type="hidden" id="stuPhoto">
+            <img id="stuPhotoPreview" src="" style="display:none;max-width:120px;margin-top:10px;border-radius:8px;border:2px solid #2d8a4e;">
+        </div>
+        
+        <button onclick="addStudent()" class="btn">➕ শিক্ষার্থী যোগ করুন</button>
+        <p id="stuMsg"></p>
+    </div>
+    
+    <div class="admin-card">
+        <h3><i class="fas fa-users"></i> শিক্ষার্থী তালিকা (এডিট ও ডিলিট)</h3>
+        <select id="viewStuClass" onchange="loadAdminStudents()" style="padding:10px;border:2px solid #ddd;border-radius:6px;font-family:inherit;">
+            <option value="">ক্লাস নির্বাচন</option>
+            <option value="Play">প্লে</option><option value="Nursery">নার্সারি</option><option value="KG">কেজি</option>
+            <option value="1">১</option><option value="2">২</option><option value="3">৩</option><option value="4">৪</option>
+            <option value="5">৫</option><option value="6">৬</option><option value="7">৭</option><option value="8">৮</option>
+            <option value="9">৯</option><option value="10">১০</option>
+        </select>
+        <div id="adminStudentList"></div>
+    </div>
+</div>
 
         <!-- ★★★ QUICK RESULT - Student list থেকে দ্রুত ফলাফল ★★★ -->
 <div id="tabQuickResult" class="tab-panel">
@@ -309,7 +319,13 @@
                     <div class="form-group"><label>ফোন</label><input type="text" id="tchPhone"></div>
                     <div class="form-group"><label>ক্রম নম্বর</label><input type="number" id="tchOrder" value="1" min="1"></div>
                 </div>
-                <div class="form-group"><label>ছবির লিংক</label><input type="text" id="tchPhoto"></div>
+               <div class="form-group">
+    <label>📷 শিক্ষকের ছবি আপলোড করুন</label>
+    <input type="file" id="tchPhotoFile" accept="image/*" onchange="uploadTeacherPhoto(this)" style="padding:10px;border:2px dashed #2d8a4e;border-radius:6px;background:#f0f7f0;cursor:pointer;width:100%;">
+    <p id="tchPhotoStatus" style="margin-top:5px;font-size:13px;"></p>
+    <input type="hidden" id="tchPhoto">
+    <img id="tchPhotoPreview" src="" style="display:none;max-width:120px;margin-top:10px;border-radius:8px;border:2px solid #2d8a4e;">
+</div>
                 <button onclick="addTeacher()" class="btn">➕ শিক্ষক যোগ করুন</button>
                 <p id="tchMsg"></p>
             </div>
@@ -324,7 +340,13 @@
             <div class="admin-card">
                 <h3><i class="fas fa-images"></i> ফটো যোগ করুন</h3>
                 <p style="color:#666;margin-bottom:15px;">ছবি আপলোড: <a href="https://imgbb.com/" target="_blank" style="color:#2d8a4e;font-weight:700;">imgbb.com</a></p>
-                <div class="form-group"><label>ছবির লিংক</label><input type="text" id="galURL"></div>
+               <div class="form-group">
+    <label>📷 ছবি আপলোড করুন</label>
+    <input type="file" id="galPhotoFile" accept="image/*" onchange="uploadGalleryPhoto(this)" style="padding:10px;border:2px dashed #2d8a4e;border-radius:6px;background:#f0f7f0;cursor:pointer;width:100%;">
+    <p id="galPhotoStatus" style="margin-top:5px;font-size:13px;"></p>
+    <input type="hidden" id="galURL">
+    <img id="galPhotoPreview" src="" style="display:none;max-width:200px;margin-top:10px;border-radius:8px;border:2px solid #2d8a4e;">
+</div>
                 <div class="form-group"><label>ক্যাপশন</label><input type="text" id="galCaption"></div>
                 <button onclick="addGallery()" class="btn">➕ ফটো যোগ করুন</button>
                 <p id="galMsg"></p>
