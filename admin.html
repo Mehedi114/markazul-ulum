@@ -191,34 +191,32 @@
         </div>
 
         <!-- ★★★ QUICK RESULT - Student list থেকে দ্রুত ফলাফল ★★★ -->
-        <div id="tabQuickResult" class="tab-panel">
-            <div class="admin-card">
-                <h3><i class="fas fa-bolt"></i> দ্রুত ফলাফল যোগ | Quick Result Add</h3>
-                <p style="color:#666;margin-bottom:15px;">ক্লাস ও পরীক্ষা সিলেক্ট করুন → শিক্ষার্থী তালিকা দেখাবে → শুধু নম্বর দিন।</p>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>ক্লাস</label>
-                        <select id="qrClass" onchange="loadQuickStudents()">
-                            <option value="">ক্লাস নির্বাচন</option>
-                            <option value="Play">প্লে</option><option value="Nursery">নার্সারি</option><option value="KG">কেজি</option>
-                            <option value="1">১</option><option value="2">২</option><option value="3">৩</option><option value="4">৪</option>
-                            <option value="5">৫</option><option value="6">৬</option><option value="7">৭</option><option value="8">৮</option>
-                            <option value="9">৯</option><option value="10">১০</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>পরীক্ষা</label>
-                        <select id="qrExam">
-                            <option value="monthly">মাসিক</option>
-                            <option value="1st-semester">প্রথম সেমিস্টার</option>
-                            <option value="2nd-semester">দ্বিতীয় সেমিস্টার</option>
-                            <option value="yearly">বার্ষিক</option>
-                        </select>
-                    </div>
-                </div>
-                <div id="quickStudentList"></div>
-            </div>
+<div id="tabQuickResult" class="tab-panel">
+    <div class="admin-card">
+        <h3><i class="fas fa-bolt"></i> দ্রুত ফলাফল যোগ | Quick Result Add</h3>
+        <p style="color:#666;margin-bottom:15px;">ক্লাস সিলেক্ট করুন → সব শিক্ষার্থীর নাম দেখাবে → প্রতিটার পাশে পরীক্ষা সিলেক্ট করে নম্বর দিন।</p>
+        <div class="form-group">
+            <label>ক্লাস নির্বাচন করুন</label>
+            <select id="qrClass" onchange="loadQuickStudents()" style="max-width:400px;">
+                <option value="">-- ক্লাস সিলেক্ট করুন --</option>
+                <option value="Play">প্লে | Play</option>
+                <option value="Nursery">নার্সারি | Nursery</option>
+                <option value="KG">কেজি | KG</option>
+                <option value="1">ক্লাস ১</option>
+                <option value="2">ক্লাস ২</option>
+                <option value="3">ক্লাস ৩</option>
+                <option value="4">ক্লাস ৪</option>
+                <option value="5">ক্লাস ৫</option>
+                <option value="6">ক্লাস ৬</option>
+                <option value="7">ক্লাস ৭</option>
+                <option value="8">ক্লাস ৮</option>
+                <option value="9">ক্লাস ৯</option>
+                <option value="10">ক্লাস ১০</option>
+            </select>
         </div>
+        <div id="quickStudentList"></div>
+    </div>
+</div>
 
         <!-- FULL RESULT -->
         <div id="tabResult" class="tab-panel">
