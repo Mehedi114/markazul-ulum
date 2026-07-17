@@ -26,6 +26,36 @@ const examNames = {
 };
 
 // ============================================
+// BENGALI ↔ ENGLISH NUMBER CONVERTER
+// ============================================
+function normalizeNumber(str) {
+    if (!str) return '';
+    const bnToEn = {'০':'0','১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9'};
+    const enToBn = {'0':'০','1':'১','2':'২','3':'৩','4':'৪','5':'৫','6':'৬','7':'৭','8':'৮','9':'৯'};
+    
+    let english = str.toString();
+    let bengali = str.toString();
+    
+    // Convert to English
+    for (let bn in bnToEn) {
+        english = english.split(bn).join(bnToEn[bn]);
+    }
+    // Convert to Bengali
+    for (let en in enToBn) {
+        bengali = bengali.split(en).join(enToBn[en]);
+    }
+    
+    return { english: english, bengali: bengali };
+}
+
+function numberMatches(dbValue, searchValue) {
+    if (!dbValue || !searchValue) return false;
+    const db = normalizeNumber(dbValue);
+    const search = normalizeNumber(searchValue);
+    return db.english === search.english || db.bengali === search.bengali;
+}
+
+// ============================================
 // NAV TOGGLE
 // ============================================
 function toggleNav() {
@@ -139,7 +169,7 @@ function searchStudents() {
             const s = doc.data(); s.id = doc.id;
             if (name && !(s.name || '').toLowerCase().includes(name.toLowerCase()) &&
                 !(s.nameBn || '').includes(name)) return;
-            if (roll && s.roll !== roll) return;
+           if (roll && !numberMatches(s.roll, roll)) return;
             students.push(s);
         });
 
@@ -202,13 +232,23 @@ function searchResults() {
     div.innerHTML = '<div class="loading">খুঁজছি...</div>';
 
     db.collection('results')
-        .where('class', '==', cls).where('exam', '==', exam).where('roll', '==', roll)
+        .where('class', '==', cls).where('exam', '==', exam)
         .get().then(snap => {
-            if (snap.empty) {
+            // Filter by roll (works for both Bengali & English numbers)
+            let matchedDoc = null;
+            snap.forEach(doc => {
+                const r = doc.data();
+                if (numberMatches(r.roll, roll)) {
+                    matchedDoc = doc;
+                }
+            });
+            
+            if (!matchedDoc) {
                 div.innerHTML = '<p style="text-align:center;color:#c62828;padding:20px;">ফলাফল পাওয়া যায়নি</p>';
                 return;
             }
-            const r = snap.docs[0].data();
+            
+            const r = matchedDoc.data();
             const subjects = r.subjects || {};
             let total = 0, count = 0, rows = '';
             for (let sub in subjects) {
@@ -224,7 +264,7 @@ function searchResults() {
                 <div class="result-card">
                     <div class="result-header">
                         <h3>${r.studentName || 'শিক্ষার্থী'}</h3>
-                        <p>ক্লাস: ${cls} | রোল: ${roll} | ${examNames[exam] || exam}</p>
+                        <p>ক্লাস: ${cls} | রোল: ${r.roll} | ${examNames[exam] || exam}</p>
                     </div>
                     <table class="result-table">
                         <thead><tr><th>বিষয়</th><th>নম্বর</th><th>গ্রেড</th></tr></thead>
