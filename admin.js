@@ -203,40 +203,75 @@ function loadQuickStudents() {
     const div = document.getElementById('quickStudentList');
     if (!cls) { div.innerHTML = ''; return; }
 
-    div.innerHTML = '<p style="color:#888;">শিক্ষার্থী তালিকা লোড হচ্ছে...</p>';
+    div.innerHTML = '<p style="color:#888;padding:15px;">শিক্ষার্থী তালিকা লোড হচ্ছে...</p>';
 
     db.collection('students').where('class', '==', cls).get().then(snap => {
-        if (snap.empty) { div.innerHTML = '<p style="color:#888;">এই ক্লাসে কোনো শিক্ষার্থী নেই। আগে শিক্ষার্থী যোগ করুন।</p>'; return; }
+        if (snap.empty) {
+            div.innerHTML = '<p style="color:#c62828;padding:15px;font-weight:600;">⚠️ এই ক্লাসে কোনো শিক্ষার্থী নেই। আগে "👨‍🎓 শিক্ষার্থী" tab থেকে যোগ করুন।</p>';
+            return;
+        }
 
-        let html = '';
+        // Sort by roll number
+        let students = [];
         snap.forEach(doc => {
             const s = doc.data();
+            s.id = doc.id;
+            students.push(s);
+        });
+        students.sort((a, b) => {
+            const ra = parseInt(a.roll) || 0;
+            const rb = parseInt(b.roll) || 0;
+            return ra - rb;
+        });
+
+        let html = `<p style="color:#2e7d32;font-weight:600;padding:10px;background:#e8f5e9;border-radius:6px;margin-bottom:15px;">
+            ✅ মোট ${students.length} জন শিক্ষার্থী পাওয়া গেছে
+        </p>`;
+
+        students.forEach(s => {
             html += `
-            <div class="quick-result-box" id="qr-${doc.id}">
+            <div class="quick-result-box" id="qr-${s.id}">
                 <h4>📝 ${s.nameBn || s.name} | রোল: ${s.roll}</h4>
+                
+                <div style="margin:10px 0;padding:10px;background:white;border-radius:6px;">
+                    <label style="font-weight:600;color:#1a5632;margin-right:10px;">🎯 পরীক্ষা:</label>
+                    <select id="qrExam-${s.id}" style="padding:8px 12px;border:2px solid #2d8a4e;border-radius:5px;font-family:inherit;font-weight:600;">
+                        <option value="monthly">মাসিক | Monthly</option>
+                        <option value="1st-semester">প্রথম সেমিস্টার | 1st Semester</option>
+                        <option value="2nd-semester">দ্বিতীয় সেমিস্টার | 2nd Semester</option>
+                        <option value="yearly">বার্ষিক | Yearly</option>
+                    </select>
+                </div>
+                
                 <div class="form-row-3">
                     <div class="form-group"><label>বাংলা</label><input type="number" class="qr-sub" data-sub="বাংলা" min="0" max="100"></div>
                     <div class="form-group"><label>ইংরেজি</label><input type="number" class="qr-sub" data-sub="ইংরেজি" min="0" max="100"></div>
                     <div class="form-group"><label>গণিত</label><input type="number" class="qr-sub" data-sub="গণিত" min="0" max="100"></div>
                     <div class="form-group"><label>বিজ্ঞান</label><input type="number" class="qr-sub" data-sub="বিজ্ঞান" min="0" max="100"></div>
                     <div class="form-group"><label>সমাজ</label><input type="number" class="qr-sub" data-sub="সমাজ" min="0" max="100"></div>
-                    <div class="form-group"><label>ইসলাম</label><input type="number" class="qr-sub" data-sub="ইসলাম শিক্ষা" min="0" max="100"></div>
+                    <div class="form-group"><label>ইসলাম শিক্ষা</label><input type="number" class="qr-sub" data-sub="ইসলাম শিক্ষা" min="0" max="100"></div>
                     <div class="form-group"><label>আরবি</label><input type="number" class="qr-sub" data-sub="আরবি" min="0" max="100"></div>
                     <div class="form-group"><label>কুরআন</label><input type="number" class="qr-sub" data-sub="কুরআন" min="0" max="100"></div>
                     <div class="form-group"><label>হাদীস</label><input type="number" class="qr-sub" data-sub="হাদীস" min="0" max="100"></div>
+                    <div class="form-group"><label>ফিকহ</label><input type="number" class="qr-sub" data-sub="ফিকহ" min="0" max="100"></div>
+                    <div class="form-group"><label>উর্দু</label><input type="number" class="qr-sub" data-sub="উর্দু" min="0" max="100"></div>
+                    <div class="form-group"><label>ICT</label><input type="number" class="qr-sub" data-sub="ICT" min="0" max="100"></div>
                 </div>
-                <button onclick="saveQuickResult('${doc.id}','${(s.nameBn||s.name||'').replace(/'/g,"\\'")}','${s.roll}','${s.photo||''}')" class="btn btn-sm">💾 সেভ করুন</button>
-                <span id="qrMsg-${doc.id}" style="margin-left:10px;font-weight:600;"></span>
+                <button onclick="saveQuickResult('${s.id}','${(s.nameBn||s.name||'').replace(/'/g,"\\'")}','${s.roll}','${s.photo||''}')" class="btn btn-sm">💾 এই শিক্ষার্থীর ফলাফল সেভ করুন</button>
+                <span id="qrMsg-${s.id}" style="margin-left:10px;font-weight:600;"></span>
             </div>`;
         });
 
         div.innerHTML = html;
+    }).catch(err => {
+        console.error(err);
+        div.innerHTML = '<p style="color:red;padding:15px;">সমস্যা হয়েছে!</p>';
     });
 }
 
 function saveQuickResult(stuId, stuName, roll, photo) {
     const cls = document.getElementById('qrClass').value;
-    const exam = document.getElementById('qrExam').value;
+    const exam = document.getElementById('qrExam-' + stuId).value;
     const msg = document.getElementById('qrMsg-' + stuId);
     const box = document.getElementById('qr-' + stuId);
     const inputs = box.querySelectorAll('.qr-sub');
@@ -247,28 +282,50 @@ function saveQuickResult(stuId, stuName, roll, photo) {
     });
 
     if (Object.keys(subjects).length === 0) {
-        msg.textContent = '❌ নম্বর দিন!'; msg.style.color = '#c62828'; return;
+        msg.textContent = '❌ অন্তত একটি বিষয়ের নম্বর দিন!';
+        msg.style.color = '#c62828';
+        return;
     }
 
-    msg.textContent = 'সেভ হচ্ছে...'; msg.style.color = '#888';
+    msg.textContent = '⏳ সেভ হচ্ছে...';
+    msg.style.color = '#888';
 
-    // Check if result already exists, if yes update, else create
+    // Check if result already exists
     db.collection('results')
-        .where('class', '==', cls).where('exam', '==', exam).where('roll', '==', roll)
+        .where('class', '==', cls)
+        .where('exam', '==', exam)
+        .where('roll', '==', roll)
         .get().then(snap => {
-            const data = { class: cls, exam, studentName: stuName, roll, subjects, photo, timestamp: firebase.firestore.FieldValue.serverTimestamp() };
+            const data = {
+                class: cls,
+                exam,
+                studentName: stuName,
+                roll,
+                subjects,
+                photo,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
             if (snap.empty) {
                 return db.collection('results').add(data);
             } else {
-                return db.collection('results').doc(snap.docs[0].id).update({ subjects, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+                // Update existing
+                return db.collection('results').doc(snap.docs[0].id).update({
+                    subjects,
+                    studentName: stuName,
+                    photo,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
             }
         }).then(() => {
-            msg.textContent = '✅ সেভ হয়েছে!'; msg.style.color = '#2e7d32';
+            msg.textContent = '✅ সেভ হয়েছে!';
+            msg.style.color = '#2e7d32';
+            setTimeout(() => { msg.textContent = ''; }, 3000);
         }).catch(e => {
-            msg.textContent = '❌ সমস্যা!'; msg.style.color = '#c62828';
+            console.error(e);
+            msg.textContent = '❌ সমস্যা হয়েছে!';
+            msg.style.color = '#c62828';
         });
 }
-
 // ============================================
 // FULL RESULT
 // ============================================
