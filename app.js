@@ -55,6 +55,30 @@ function numberMatches(dbValue, searchValue) {
     return db.english === search.english || db.bengali === search.bengali;
 }
 
+
+// ============================================
+// UPDATE RESULT FILTERS (Show Month/Year)
+// ============================================
+function updateResultFilters() {
+    const exam = document.getElementById('resultExam').value;
+    const monthSelect = document.getElementById('resultMonth');
+    const yearSelect = document.getElementById('resultYear');
+    
+    if (exam === 'monthly') {
+        monthSelect.style.display = 'inline-block';
+        yearSelect.style.display = 'inline-block';
+    } else if (exam === '1st-semester' || exam === '2nd-semester' || exam === 'yearly') {
+        monthSelect.style.display = 'none';
+        monthSelect.value = '';
+        yearSelect.style.display = 'inline-block';
+    } else {
+        monthSelect.style.display = 'none';
+        yearSelect.style.display = 'none';
+        monthSelect.value = '';
+        yearSelect.value = '';
+    }
+}
+
 // ============================================
 // NAV TOGGLE
 // ============================================
@@ -233,17 +257,21 @@ function searchResults() {
 
     div.innerHTML = '<div class="loading">খুঁজছি...</div>';
 
-    db.collection('results')
-        .where('class', '==', cls).where('exam', '==', exam)
-        .get().then(snap => {
-            // Filter by roll (works for both Bengali & English numbers)
-            let matchedDoc = null;
-            snap.forEach(doc => {
-                const r = doc.data();
-                if (numberMatches(r.roll, roll)) {
-                    matchedDoc = doc;
-                }
-            });
+    const month = document.getElementById('resultMonth').value;
+const year = document.getElementById('resultYear').value;
+
+db.collection('results')
+    .where('class', '==', cls).where('exam', '==', exam)
+    .get().then(snap => {
+        let matchedDoc = null;
+        snap.forEach(doc => {
+            const r = doc.data();
+            if (!numberMatches(r.roll, roll)) return;
+            // Filter by month/year if provided
+            if (month && r.month !== month) return;
+            if (year && r.year !== year && r.year !== parseInt(year).toString()) return;
+            matchedDoc = doc;
+        });
             
             if (!matchedDoc) {
                 div.innerHTML = '<p style="text-align:center;color:#c62828;padding:20px;">ফলাফল পাওয়া যায়নি</p>';
