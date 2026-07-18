@@ -208,13 +208,15 @@ function searchStudents() {
 // ============================================
 // SEARCH RESULTS
 // ============================================
-function getGrade(m) {
-    if (m >= 80) return { g: 'A+', c: 'grade-a-plus' };
-    if (m >= 70) return { g: 'A', c: 'grade-a' };
-    if (m >= 60) return { g: 'A-', c: 'grade-a' };
-    if (m >= 50) return { g: 'B', c: 'grade-b' };
-    if (m >= 40) return { g: 'C', c: 'grade-c' };
-    if (m >= 33) return { g: 'D', c: 'grade-c' };
+function getGrade(m, fullMark) {
+    fullMark = fullMark || 100;
+    const percent = (m / fullMark) * 100;
+    if (percent >= 80) return { g: 'A+', c: 'grade-a-plus' };
+    if (percent >= 70) return { g: 'A', c: 'grade-a' };
+    if (percent >= 60) return { g: 'A-', c: 'grade-a' };
+    if (percent >= 50) return { g: 'B', c: 'grade-b' };
+    if (percent >= 40) return { g: 'C', c: 'grade-c' };
+    if (percent >= 33) return { g: 'D', c: 'grade-c' };
     return { g: 'F', c: 'grade-f' };
 }
 
@@ -254,12 +256,13 @@ function searchResults() {
             for (let sub in subjects) {
                 const m = parseInt(subjects[sub]) || 0;
                 total += m; count++;
-                const gr = getGrade(m);
+                const gr = getGrade(m, r.fullMark);
                 rows += `<tr><td>${sub}</td><td>${m}</td><td class="${gr.c}">${gr.g}</td></tr>`;
             }
             const avg = count > 0 ? (total / count).toFixed(1) : 0;
-            const gpa = avg >= 80 ? '5.00' : avg >= 70 ? '4.00' : avg >= 60 ? '3.50' : avg >= 50 ? '3.00' : avg >= 40 ? '2.00' : avg >= 33 ? '1.00' : '0.00';
-
+const fullM = r.fullMark || 100;
+const avgPercent = (avg / fullM) * 100;
+const gpa = avgPercent >= 80 ? '5.00' : avgPercent >= 70 ? '4.00' : avgPercent >= 60 ? '3.50' : avgPercent >= 50 ? '3.00' : avgPercent >= 40 ? '2.00' : avgPercent >= 33 ? '1.00' : '0.00';
             div.innerHTML = `
                 <div class="result-card">
                     <div class="result-header">
@@ -271,7 +274,7 @@ function searchResults() {
                         <tbody>${rows}</tbody>
                     </table>
                     <div class="result-summary">
-                        <p>মোট: <span>${total}</span> | গড়: <span>${avg}</span> | GPA: <span>${gpa}</span></p>
+                       <p>মোট: <span>${total}/${count * fullM}</span> | গড়: <span>${avg}/${fullM}</span> | GPA: <span>${gpa}</span></p>
                     </div>
                 </div>`;
         }).catch(err => {
