@@ -405,11 +405,13 @@ function saveQuickResult(stuId, stuName, roll, photo) {
     db.collection('results')
         .where('class', '==', cls).where('exam', '==', exam).where('roll', '==', roll)
         .get().then(snap => {
-            const data = { class: cls, exam, studentName: stuName, roll, subjects, fullMark, photo, timestamp: firebase.firestore.FieldValue.serverTimestamp() };
+            const month = document.getElementById('qrMonth').value;
+const year = document.getElementById('qrYear').value;
+const data = { class: cls, exam, studentName: stuName, roll, subjects, fullMark, month, year, photo, timestamp: firebase.firestore.FieldValue.serverTimestamp() };
             if (snap.empty) {
                 return db.collection('results').add(data);
             } else {
-                return db.collection('results').doc(snap.docs[0].id).update({ subjects, studentName: stuName, photo, fullMark, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+               return db.collection('results').doc(snap.docs[0].id).update({ subjects, studentName: stuName, photo, fullMark, month, year, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
             }
         }).then(() => {
             msg.textContent = '✅ সেভ হয়েছে!'; msg.style.color = '#2e7d32';
@@ -440,13 +442,15 @@ function addResult() {
     }
     if (Object.keys(subjects).length === 0) { msg.textContent = 'নম্বর দিন!'; msg.className = 'msg-error'; return; }
     const data = {
-        class: document.getElementById('resClass').value,
-        exam: document.getElementById('resExam').value,
-        studentName, roll, subjects,
-        fullMark: parseInt(document.getElementById('resFullMark').value) || 100,
-        photo: document.getElementById('resPhoto').value.trim(),
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    };
+    class: document.getElementById('resClass').value,
+    exam: document.getElementById('resExam').value,
+    studentName, roll, subjects,
+    fullMark: parseInt(document.getElementById('resFullMark').value) || 100,
+    month: document.getElementById('resMonth').value,
+    year: document.getElementById('resYear').value,
+    photo: document.getElementById('resPhoto').value.trim(),
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+};
     msg.textContent = 'যোগ হচ্ছে...'; msg.style.color = '#888';
     db.collection('results').add(data).then(() => {
         msg.textContent = '✅ ফলাফল যোগ হয়েছে!'; msg.className = 'msg-success';
@@ -635,4 +639,122 @@ function loadAdminMessages() {
 function deleteDoc(col, id, cb) {
     if (!confirm('মুছে ফেলতে চান?')) return;
     db.collection(col).doc(id).delete().then(() => { if (cb) cb(); }).catch(e => alert('সমস্যা!'));
+}
+
+// ============================================
+// DOWNLOAD RESULT SHEET AS PDF
+// ============================================
+function downloadResultSheet() {
+    const cls = document.getElementById('viewResClass').value;
+    const exam = document.getElementById('viewResExam').value;
+    
+    if (!cls || !exam) {
+        alert('ক্লাস ও পরীক্ষা নির্বাচন করুন!');
+        return;
+    }
+    
+    const examNames = {
+        'monthly': 'Monthly',
+        '1st-semester': '1st Semester',
+        '2nd-semester': '2nd Semester',
+        'yearly': 'Yearly'
+    };
+    
+    db.collection('results').where('class', '==', cls).where('exam', '==', exam).get().then(snap => {
+        if (snap.empty) {
+            alert('কোনো ফলাফল পাওয়া যায়নি!');
+            return;
+        }
+        
+        let results = [];
+        let allSubjects = new Set();
+        let month = '', year = '', fullMark = 100;
+        
+        snap.forEach(doc => {
+            const r = doc.data();
+            if (r.month) month = r.month;
+            if (r.year) year = r.year;
+            if (r.fullMark) fullMark = r.fullMark;
+            let total = 0;
+            for (let s in (r.subjects||{})) {
+                total += parseInt(r.subjects[s]) || 0;
+                allSubjects.add(s);
+            }
+            results.push({ ...r, total });
+        });
+        
+        results.sort((a, b) => b.total - a.total);
+        const subjectList = Array.from(allSubjects);
+        
+        // Rank assign
+        results.forEach((r, i) => r.rank = i + 1);
+        
+        // Create PDF
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('l', 'mm', 'a4'); // landscape
+        
+        // Header
+        doc.setFontSize(16);
+        doc.setFont(undefined, 'bold');
+        doc.text('Markazul Ulum Cadet School & Madrasa', 148, 15, { align: 'center' });
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'normal');
+        doc.text('Parerhat', 148, 22, { align: 'center' });
+        
+        doc.setFontSize(13);
+        doc.setFont(undefined, 'bold');
+        let title = `Class ${cls} - ${examNames[exam] || exam} Exam Result Sheet`;
+        if (month) title += ` (${month}${year ? ' ' + year : ''})`;
+        else if (year) title += ` (${year})`;
+        doc.text(title, 148, 32, { align: 'center' });
+        
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Full Marks per Subject: ${fullMark}`, 148, 38, { align: 'center' });
+        
+        // Table
+        const headers = ['Rank', 'Roll', 'Name', ...subjectList, 'Total', 'Average', 'Grade'];
+        const rows = results.map(r => {
+            const row = [r.rank, r.roll, r.studentName];
+            subjectList.forEach(s => row.push(r.subjects[s] !== undefined ? r.subjects[s] : '-'));
+            const avg = (r.total / subjectList.length).toFixed(1);
+            const percent = (avg / fullMark) * 100;
+            let grade = 'F';
+            if (percent >= 80) grade = 'A+';
+            else if (percent >= 70) grade = 'A';
+            else if (percent >= 60) grade = 'A-';
+            else if (percent >= 50) grade = 'B';
+            else if (percent >= 40) grade = 'C';
+            else if (percent >= 33) grade = 'D';
+            row.push(r.total, avg, grade);
+            return row;
+        });
+        
+        doc.autoTable({
+            head: [headers],
+            body: rows,
+            startY: 45,
+            theme: 'grid',
+            headStyles: { fillColor: [26, 86, 50], textColor: 255, fontSize: 9 },
+            bodyStyles: { fontSize: 8 },
+            columnStyles: { 0: { cellWidth: 12 }, 1: { cellWidth: 15 }, 2: { cellWidth: 40 } },
+            styles: { halign: 'center', cellPadding: 2 }
+        });
+        
+        // Footer
+        const finalY = doc.lastAutoTable.finalY || 200;
+        doc.setFontSize(9);
+        doc.text(`Total Students: ${results.length}`, 15, finalY + 10);
+        doc.text(`Generated on: ${new Date().toLocaleDateString('en-GB')}`, 15, finalY + 15);
+        doc.text('Signature of Head Teacher: _______________', 200, finalY + 15);
+        
+        // Save
+        let fileName = `Class-${cls}-${examNames[exam] || exam}`;
+        if (month) fileName += `-${month}`;
+        if (year) fileName += `-${year}`;
+        doc.save(fileName + '.pdf');
+    }).catch(err => {
+        console.error(err);
+        alert('সমস্যা হয়েছে!');
+    });
 }
