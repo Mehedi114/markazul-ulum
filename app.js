@@ -406,25 +406,25 @@ function loadToppersShowcase() {
                     <div class="showcase-class-header">🏆 ${classNamesBn[cls] || cls}</div>
                     <div class="showcase-body">`;
 
-                top3.forEach((t, i) => {
-                    const studentPhoto = t.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.studentName)}&background=random&size=100`;
-                    
-                    html += `
-                    <div class="showcase-student ${rankClasses[i]}">
-                        <div class="showcase-rank-badge">${i+1}</div>
-                        <div class="showcase-img-container">
-                            <img src="${studentPhoto}" class="showcase-photo" onerror="this.src='https://via.placeholder.com/100?text=Student'">
-                        </div>
-                        <div class="showcase-details">
-                            <h4>${t.studentName}</h4>
-                            <p>রোল: ${t.roll}</p>
-                        </div>
-                        <div class="showcase-score">
-                            <span class="total-marks">${t.total}</span>
-                            <span class="label">Total</span>
-                        </div>
-                    </div>`;
-                });
+              top3.forEach((t, i) => {
+    const studentPhoto = t.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.studentName)}&background=2d8a4e&color=fff&size=100&bold=true`;
+    
+    html += `
+    <div class="showcase-student ${rankClasses[i]}">
+        <div class="showcase-rank-badge">${i+1}</div>
+        <div class="showcase-img-wrap">
+            <img src="${studentPhoto}" class="showcase-photo" onerror="this.src='https://ui-avatars.com/api/?name=S&background=2d8a4e&color=fff&size=100'">
+        </div>
+        <div class="showcase-details">
+            <h4>${t.studentName}</h4>
+            <p>রোল: ${t.roll}</p>
+        </div>
+        <div class="showcase-score">
+            <span class="total-marks">${t.total}</span>
+            <span class="label">Total</span>
+        </div>
+    </div>`;
+});
 
                 html += `</div></div>`;
             });
