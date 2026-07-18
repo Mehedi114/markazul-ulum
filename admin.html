@@ -205,6 +205,55 @@
     <div class="admin-card">
         <h3><i class="fas fa-bolt"></i> দ্রুত ফলাফল যোগ | Quick Result Add</h3>
         <p style="color:#666;margin-bottom:15px;">ক্লাস সিলেক্ট করুন → সব শিক্ষার্থীর নাম দেখাবে → প্রতিটার পাশে পরীক্ষা সিলেক্ট করে নম্বর দিন।</p>
+        <div class="form-row">
+    <div class="form-group">
+        <label>মাস (মাসিক পরীক্ষার জন্য)</label>
+        <select id="qrMonth" style="max-width:200px;">
+            <option value="">নির্বাচন করুন</option>
+            <option value="জানুয়ারি">জানুয়ারি | January</option>
+            <option value="ফেব্রুয়ারি">ফেব্রুয়ারি | February</option>
+            <option value="মার্চ">মার্চ | March</option>
+            <option value="এপ্রিল">এপ্রিল | April</option>
+            <option value="মে">মে | May</option>
+            <option value="জুন">জুন | June</option>
+            <option value="জুলাই">জুলাই | July</option>
+            <option value="আগস্ট">আগস্ট | August</option>
+            <option value="সেপ্টেম্বর">সেপ্টেম্বর | September</option>
+            <option value="অক্টোবর">অক্টোবর | October</option>
+            <option value="নভেম্বর">নভেম্বর | November</option>
+            <option value="ডিসেম্বর">ডিসেম্বর | December</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label>বছর | Year</label>
+        <input type="number" id="qrYear" placeholder="2025" min="2020" max="2050" value="2025" style="max-width:200px;">
+    </div>
+</div>
+<div class="form-row">
+    <div class="form-group">
+        <label>মাস</label>
+        <select id="resMonth" style="max-width:200px;">
+            <option value="">নির্বাচন</option>
+            <option value="জানুয়ারি">জানুয়ারি</option>
+            <option value="ফেব্রুয়ারি">ফেব্রুয়ারি</option>
+            <option value="মার্চ">মার্চ</option>
+            <option value="এপ্রিল">এপ্রিল</option>
+            <option value="মে">মে</option>
+            <option value="জুন">জুন</option>
+            <option value="জুলাই">জুলাই</option>
+            <option value="আগস্ট">আগস্ট</option>
+            <option value="সেপ্টেম্বর">সেপ্টেম্বর</option>
+            <option value="অক্টোবর">অক্টোবর</option>
+            <option value="নভেম্বর">নভেম্বর</option>
+            <option value="ডিসেম্বর">ডিসেম্বর</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label>বছর</label>
+        <input type="number" id="resYear" placeholder="2025" min="2020" max="2050" value="2025" style="max-width:200px;">
+    </div>
+</div>
+        
       <div class="form-group">
     <label>পূর্ণ নম্বর | Full Marks</label>
     <select id="qrFullMark" style="max-width:200px;">
@@ -313,7 +362,10 @@
                             <option value="2nd-semester">২য় সেমিস্টার</option><option value="yearly">বার্ষিক</option>
                         </select>
                     </div>
-                    <div class="form-group"><button onclick="loadAdminResults()" class="btn btn-sm">দেখুন</button></div>
+                    <div class="form-group">
+    <button onclick="loadAdminResults()" class="btn btn-sm">দেখুন</button>
+    <button onclick="downloadResultSheet()" class="btn btn-sm" style="background:#1976d2;color:white;margin-left:5px;">📥 PDF ডাউনলোড</button>
+</div>
                 </div>
                 <div id="adminResultList"></div>
             </div>
