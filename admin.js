@@ -826,7 +826,7 @@ function downloadResultSheet() {
     <p style="font-size:12px;color:#666;">💡 প্রিন্ট window এ "Save as PDF" সিলেক্ট করলে PDF হিসেবে সেভ হবে</p>
 </div>
 <div class="header">
-    <h1>মারকাযুল উলুম ক্যাডেট স্কুল ও মাদ্রাসা</h1>
+    <h1>মারকাজুল উলুম ক্যাডেট স্কুল ও মাদ্রাসা</h1>
     <p>পারেরহাট | Parerhat</p>
     <h2>${title}</h2>
     <p>পূর্ণ নম্বর: ${fullMark}</p>
