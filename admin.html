@@ -358,13 +358,40 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <select id="viewResExam" style="padding:10px;border:2px solid #ddd;border-radius:6px;font-family:inherit;">
-                            <option value="">পরীক্ষা</option>
-                            <option value="monthly">মাসিক</option><option value="1st-semester">১ম সেমিস্টার</option>
-                            <option value="2nd-semester">২য় সেমিস্টার</option><option value="yearly">বার্ষিক</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
+    <select id="viewResExam" onchange="updateAdminResultFilters()" style="padding:10px;border:2px solid #ddd;border-radius:6px;font-family:inherit;">
+        <option value="">পরীক্ষা</option>
+        <option value="monthly">মাসিক</option><option value="1st-semester">১ম সেমিস্টার</option>
+        <option value="2nd-semester">২য় সেমিস্টার</option><option value="yearly">বার্ষিক</option>
+    </select>
+</div>
+<div class="form-group">
+    <select id="viewResMonth" style="display:none;padding:10px;border:2px solid #ddd;border-radius:6px;font-family:inherit;">
+        <option value="">মাস</option>
+        <option value="জানুয়ারি">জানুয়ারি</option>
+        <option value="ফেব্রুয়ারি">ফেব্রুয়ারি</option>
+        <option value="মার্চ">মার্চ</option>
+        <option value="এপ্রিল">এপ্রিল</option>
+        <option value="মে">মে</option>
+        <option value="জুন">জুন</option>
+        <option value="জুলাই">জুলাই</option>
+        <option value="আগস্ট">আগস্ট</option>
+        <option value="সেপ্টেম্বর">সেপ্টেম্বর</option>
+        <option value="অক্টোবর">অক্টোবর</option>
+        <option value="নভেম্বর">নভেম্বর</option>
+        <option value="ডিসেম্বর">ডিসেম্বর</option>
+    </select>
+</div>
+<div class="form-group">
+    <select id="viewResYear" style="display:none;padding:10px;border:2px solid #ddd;border-radius:6px;font-family:inherit;">
+        <option value="">বছর</option>
+        <option value="2024">২০২৪</option>
+        <option value="2025">২০২৫</option>
+        <option value="2026">২০২৬</option>
+        <option value="2027">২০২৭</option>
+        <option value="2028">২০২৮</option>
+    </select>
+</div>
+<div class="form-group">
     <button onclick="loadAdminResults()" class="btn btn-sm">দেখুন</button>
     <button onclick="downloadResultSheet()" class="btn btn-sm" style="background:#1976d2;color:white;margin-left:5px;">📥 PDF ডাউনলোড</button>
 </div>
