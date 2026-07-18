@@ -852,10 +852,16 @@ function downloadResultSheet() {
         <p>মোট শিক্ষার্থী: ${results.length}</p>
         <p>প্রিন্টের তারিখ: ${new Date().toLocaleDateString('bn-BD')}</p>
     </div>
+    <div style="display:flex;gap:60px;">
     <div class="signature">
         <p>_____________________</p>
         <p>প্রধান শিক্ষকের স্বাক্ষর</p>
     </div>
+    <div class="signature">
+        <p>_____________________</p>
+        <p>প্রধান পরিচালকের স্বাক্ষর</p>
+    </div>
+</div>
 </div>
 </body>
 </html>
