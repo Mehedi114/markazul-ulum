@@ -94,6 +94,29 @@ function showAdminPanel() {
 }
 
 // ============================================
+// UPDATE ADMIN RESULT FILTERS (Month/Year)
+// ============================================
+function updateAdminResultFilters() {
+    const exam = document.getElementById('viewResExam').value;
+    const monthSelect = document.getElementById('viewResMonth');
+    const yearSelect = document.getElementById('viewResYear');
+    
+    if (exam === 'monthly') {
+        monthSelect.style.display = 'inline-block';
+        yearSelect.style.display = 'inline-block';
+    } else if (exam === '1st-semester' || exam === '2nd-semester' || exam === 'yearly') {
+        monthSelect.style.display = 'none';
+        monthSelect.value = '';
+        yearSelect.style.display = 'inline-block';
+    } else {
+        monthSelect.style.display = 'none';
+        yearSelect.style.display = 'none';
+        monthSelect.value = '';
+        yearSelect.value = '';
+    }
+}
+
+// ============================================
 // TAB SWITCH
 // ============================================
 function showTab(tabId, btn) {
@@ -461,21 +484,41 @@ function addResult() {
 function loadAdminResults() {
     const cls = document.getElementById('viewResClass').value;
     const exam = document.getElementById('viewResExam').value;
+    const month = document.getElementById('viewResMonth').value;
+    const year = document.getElementById('viewResYear').value;
     const div = document.getElementById('adminResultList');
     if (!cls || !exam) { div.innerHTML = '<p style="color:#888;">ক্লাস ও পরীক্ষা নির্বাচন করুন</p>'; return; }
     div.innerHTML = '<p style="color:#888;">লোড হচ্ছে...</p>';
     db.collection('results').where('class', '==', cls).where('exam', '==', exam).get().then(snap => {
         if (snap.empty) { div.innerHTML = '<p style="color:#888;">কোনো ফলাফল নেই</p>'; return; }
-        let html = '<table class="data-table"><thead><tr><th>রোল</th><th>নাম</th><th>মোট</th><th>মুছুন</th></tr></thead><tbody>';
+        
+        // Filter by month/year
+        let filtered = [];
         snap.forEach(doc => {
-            const r = doc.data(); let total = 0;
+            const r = doc.data();
+            if (month && r.month !== month) return;
+            if (year && r.year !== year && r.year !== parseInt(year).toString()) return;
+            filtered.push({ id: doc.id, ...r });
+        });
+        
+        if (filtered.length === 0) { div.innerHTML = '<p style="color:#888;">এই সময়ের কোনো ফলাফল নেই</p>'; return; }
+        
+        let html = '<table class="data-table"><thead><tr><th>রোল</th><th>নাম</th><th>মাস</th><th>বছর</th><th>মোট</th><th>মুছুন</th></tr></thead><tbody>';
+        filtered.forEach(r => {
+            let total = 0;
             for (let s in (r.subjects||{})) total += parseInt(r.subjects[s])||0;
-            html += `<tr><td>${r.roll||''}</td><td>${r.studentName||''}</td><td>${total}</td><td><button class="btn-delete" onclick="deleteDoc('results','${doc.id}',loadAdminResults)">🗑️</button></td></tr>`;
+            html += `<tr>
+                <td>${r.roll||''}</td>
+                <td>${r.studentName||''}</td>
+                <td>${r.month||'-'}</td>
+                <td>${r.year||'-'}</td>
+                <td>${total}</td>
+                <td><button class="btn-delete" onclick="deleteDoc('results','${r.id}',loadAdminResults)">🗑️</button></td>
+            </tr>`;
         });
         div.innerHTML = html + '</tbody></table>';
     });
 }
-
 // ============================================
 // TEACHER
 // ============================================
@@ -647,9 +690,21 @@ function deleteDoc(col, id, cb) {
 function downloadResultSheet() {
     const cls = document.getElementById('viewResClass').value;
     const exam = document.getElementById('viewResExam').value;
+    const filterMonth = document.getElementById('viewResMonth').value;
+    const filterYear = document.getElementById('viewResYear').value;
     
     if (!cls || !exam) {
         alert('ক্লাস ও পরীক্ষা নির্বাচন করুন!');
+        return;
+    }
+    
+    // Check month/year required
+    if (exam === 'monthly' && (!filterMonth || !filterYear)) {
+        alert('মাসিক পরীক্ষার জন্য মাস ও বছর নির্বাচন করুন!');
+        return;
+    }
+    if ((exam === '1st-semester' || exam === '2nd-semester' || exam === 'yearly') && !filterYear) {
+        alert('বছর নির্বাচন করুন!');
         return;
     }
     
@@ -660,28 +715,35 @@ function downloadResultSheet() {
         'yearly': 'বার্ষিক পরীক্ষা'
     };
     
-    db.collection('results').where('class', '==', cls).where('exam', '==', exam).get().then(snap => {
-        if (snap.empty) {
-            alert('কোনো ফলাফল পাওয়া যায়নি!');
-            return;
+   db.collection('results').where('class', '==', cls).where('exam', '==', exam).get().then(snap => {
+    if (snap.empty) {
+        alert('কোনো ফলাফল পাওয়া যায়নি!');
+        return;
+    }
+    
+    let results = [];
+    let allSubjects = new Set();
+    let month = filterMonth, year = filterYear, fullMark = 100;
+    
+    snap.forEach(doc => {
+        const r = doc.data();
+        // Filter by month/year
+        if (filterMonth && r.month !== filterMonth) return;
+        if (filterYear && r.year !== filterYear && r.year !== parseInt(filterYear).toString()) return;
+        
+        if (r.fullMark) fullMark = r.fullMark;
+        let total = 0;
+        for (let s in (r.subjects||{})) {
+            total += parseInt(r.subjects[s]) || 0;
+            allSubjects.add(s);
         }
-        
-        let results = [];
-        let allSubjects = new Set();
-        let month = '', year = '', fullMark = 100;
-        
-        snap.forEach(doc => {
-            const r = doc.data();
-            if (r.month) month = r.month;
-            if (r.year) year = r.year;
-            if (r.fullMark) fullMark = r.fullMark;
-            let total = 0;
-            for (let s in (r.subjects||{})) {
-                total += parseInt(r.subjects[s]) || 0;
-                allSubjects.add(s);
-            }
-            results.push({ ...r, total });
-        });
+        results.push({ ...r, total });
+    });
+    
+    if (results.length === 0) {
+        alert('এই মাস/বছরের কোনো ফলাফল নেই!');
+        return;
+    }
         
         results.sort((a, b) => b.total - a.total);
         const subjectList = Array.from(allSubjects);
