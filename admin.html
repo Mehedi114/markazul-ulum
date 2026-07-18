@@ -205,6 +205,14 @@
     <div class="admin-card">
         <h3><i class="fas fa-bolt"></i> দ্রুত ফলাফল যোগ | Quick Result Add</h3>
         <p style="color:#666;margin-bottom:15px;">ক্লাস সিলেক্ট করুন → সব শিক্ষার্থীর নাম দেখাবে → প্রতিটার পাশে পরীক্ষা সিলেক্ট করে নম্বর দিন।</p>
+      <div class="form-group">
+    <label>পূর্ণ নম্বর | Full Marks</label>
+    <select id="qrFullMark" style="max-width:200px;">
+        <option value="100">১০০ নম্বর</option>
+        <option value="50">৫০ নম্বর</option>
+    </select>
+</div>
+        
         <div class="form-group">
             <label>ক্লাস নির্বাচন করুন</label>
             <select id="qrClass" onchange="loadQuickStudents()" style="max-width:400px;">
@@ -256,6 +264,14 @@
                     <div class="form-group"><label>শিক্ষার্থীর নাম</label><input type="text" id="resStudentName"></div>
                     <div class="form-group"><label>রোল</label><input type="text" id="resRoll"></div>
                 </div>
+                
+                <div class="form-group">
+    <label>পূর্ণ নম্বর | Full Marks</label>
+    <select id="resFullMark" style="max-width:200px;">
+        <option value="100">১০০ নম্বর</option>
+        <option value="50">৫০ নম্বর</option>
+    </select>
+</div>
                 <h4 style="color:#1a5632;margin:15px 0 10px;">বিষয়ভিত্তিক নম্বর</h4>
                 <div class="form-row-3">
                     <div class="form-group"><label>বাংলা</label><input type="number" id="resBangla" min="0" max="100"></div>
