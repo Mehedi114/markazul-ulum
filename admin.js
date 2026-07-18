@@ -642,7 +642,7 @@ function deleteDoc(col, id, cb) {
 }
 
 // ============================================
-// DOWNLOAD RESULT SHEET AS PDF
+// DOWNLOAD RESULT SHEET (Print → Save as PDF)
 // ============================================
 function downloadResultSheet() {
     const cls = document.getElementById('viewResClass').value;
@@ -654,10 +654,10 @@ function downloadResultSheet() {
     }
     
     const examNames = {
-        'monthly': 'Monthly',
-        '1st-semester': '1st Semester',
-        '2nd-semester': '2nd Semester',
-        'yearly': 'Yearly'
+        'monthly': 'মাসিক পরীক্ষা',
+        '1st-semester': 'প্রথম সেমিস্টার',
+        '2nd-semester': 'দ্বিতীয় সেমিস্টার',
+        'yearly': 'বার্ষিক পরীক্ষা'
     };
     
     db.collection('results').where('class', '==', cls).where('exam', '==', exam).get().then(snap => {
@@ -685,38 +685,21 @@ function downloadResultSheet() {
         
         results.sort((a, b) => b.total - a.total);
         const subjectList = Array.from(allSubjects);
-        
-        // Rank assign
         results.forEach((r, i) => r.rank = i + 1);
         
-        // Create PDF
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('l', 'mm', 'a4'); // landscape
+        const classNames = {'Play':'প্লে','Nursery':'নার্সারি','KG':'কেজি','1':'১','2':'২','3':'৩','4':'৪','5':'৫','6':'৬','7':'৭','8':'৮','9':'৯','10':'১০'};
         
-        // Header
-        doc.setFontSize(16);
-        doc.setFont(undefined, 'bold');
-        doc.text('Markazul Ulum Cadet School & Madrasa', 148, 15, { align: 'center' });
-        doc.setFontSize(11);
-        doc.setFont(undefined, 'normal');
-        doc.text('Parerhat', 148, 22, { align: 'center' });
-        
-        doc.setFontSize(13);
-        doc.setFont(undefined, 'bold');
-        let title = `Class ${cls} - ${examNames[exam] || exam} Exam Result Sheet`;
-        if (month) title += ` (${month}${year ? ' ' + year : ''})`;
+        let title = `ক্লাস ${classNames[cls]||cls} - ${examNames[exam]||exam}`;
+        if (month && year) title += ` (${month} ${year})`;
         else if (year) title += ` (${year})`;
-        doc.text(title, 148, 32, { align: 'center' });
         
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'normal');
-        doc.text(`Full Marks per Subject: ${fullMark}`, 148, 38, { align: 'center' });
-        
-        // Table
-        const headers = ['Rank', 'Roll', 'Name', ...subjectList, 'Total', 'Average', 'Grade'];
-        const rows = results.map(r => {
-            const row = [r.rank, r.roll, r.studentName];
-            subjectList.forEach(s => row.push(r.subjects[s] !== undefined ? r.subjects[s] : '-'));
+        // Build HTML rows
+        let rows = '';
+        results.forEach(r => {
+            let subjectCells = '';
+            subjectList.forEach(s => {
+                subjectCells += `<td>${r.subjects[s] !== undefined ? r.subjects[s] : '-'}</td>`;
+            });
             const avg = (r.total / subjectList.length).toFixed(1);
             const percent = (avg / fullMark) * 100;
             let grade = 'F';
@@ -726,33 +709,96 @@ function downloadResultSheet() {
             else if (percent >= 50) grade = 'B';
             else if (percent >= 40) grade = 'C';
             else if (percent >= 33) grade = 'D';
-            row.push(r.total, avg, grade);
-            return row;
+            
+            rows += `<tr>
+                <td>${r.rank}</td>
+                <td>${r.roll}</td>
+                <td style="text-align:left;">${r.studentName}</td>
+                ${subjectCells}
+                <td><strong>${r.total}</strong></td>
+                <td>${avg}</td>
+                <td><strong>${grade}</strong></td>
+            </tr>`;
         });
         
-        doc.autoTable({
-            head: [headers],
-            body: rows,
-            startY: 45,
-            theme: 'grid',
-            headStyles: { fillColor: [26, 86, 50], textColor: 255, fontSize: 9 },
-            bodyStyles: { fontSize: 8 },
-            columnStyles: { 0: { cellWidth: 12 }, 1: { cellWidth: 15 }, 2: { cellWidth: 40 } },
-            styles: { halign: 'center', cellPadding: 2 }
+        let subjectHeaders = '';
+        subjectList.forEach(s => {
+            subjectHeaders += `<th>${s}</th>`;
         });
         
-        // Footer
-        const finalY = doc.lastAutoTable.finalY || 200;
-        doc.setFontSize(9);
-        doc.text(`Total Students: ${results.length}`, 15, finalY + 10);
-        doc.text(`Generated on: ${new Date().toLocaleDateString('en-GB')}`, 15, finalY + 15);
-        doc.text('Signature of Head Teacher: _______________', 200, finalY + 15);
-        
-        // Save
-        let fileName = `Class-${cls}-${examNames[exam] || exam}`;
-        if (month) fileName += `-${month}`;
-        if (year) fileName += `-${year}`;
-        doc.save(fileName + '.pdf');
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<title>ফলাফল - ${title}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+    body { font-family: 'Noto Sans Bengali', sans-serif; padding: 20px; color: #000; }
+    .header { text-align: center; margin-bottom: 20px; }
+    .header h1 { color: #1a5632; margin: 0; font-size: 22px; }
+    .header p { margin: 3px 0; font-size: 14px; }
+    .header h2 { color: #333; font-size: 16px; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+    th, td { border: 1px solid #333; padding: 6px 4px; text-align: center; }
+    th { background: #1a5632; color: white; font-weight: 600; }
+    tr:nth-child(even) { background: #f5f5f5; }
+    .footer { margin-top: 30px; display: flex; justify-content: space-between; font-size: 13px; }
+    .signature { margin-top: 40px; }
+    @media print {
+        body { padding: 10px; }
+        .no-print { display: none; }
+    }
+    .print-btn {
+        background: #1a5632; color: white; padding: 10px 25px; border: none;
+        border-radius: 5px; font-size: 14px; cursor: pointer; margin: 10px 5px;
+        font-family: inherit;
+    }
+</style>
+</head>
+<body>
+<div class="no-print" style="text-align:center;margin-bottom:20px;">
+    <button class="print-btn" onclick="window.print()">🖨️ প্রিন্ট / PDF সেভ করুন</button>
+    <button class="print-btn" style="background:#666;" onclick="window.close()">✕ বন্ধ করুন</button>
+    <p style="font-size:12px;color:#666;">💡 প্রিন্ট window এ "Save as PDF" সিলেক্ট করলে PDF হিসেবে সেভ হবে</p>
+</div>
+<div class="header">
+    <h1>মারকাযুল উলুম ক্যাডেট স্কুল ও মাদ্রাসা</h1>
+    <p>পারেরহাট | Parerhat</p>
+    <h2>${title}</h2>
+    <p>পূর্ণ নম্বর: ${fullMark}</p>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>র‍্যাঙ্ক</th>
+            <th>রোল</th>
+            <th>নাম</th>
+            ${subjectHeaders}
+            <th>মোট</th>
+            <th>গড়</th>
+            <th>গ্রেড</th>
+        </tr>
+    </thead>
+    <tbody>
+        ${rows}
+    </tbody>
+</table>
+<div class="footer">
+    <div>
+        <p>মোট শিক্ষার্থী: ${results.length}</p>
+        <p>প্রিন্টের তারিখ: ${new Date().toLocaleDateString('bn-BD')}</p>
+    </div>
+    <div class="signature">
+        <p>_____________________</p>
+        <p>প্রধান শিক্ষকের স্বাক্ষর</p>
+    </div>
+</div>
+</body>
+</html>
+        `);
+        printWindow.document.close();
     }).catch(err => {
         console.error(err);
         alert('সমস্যা হয়েছে!');
