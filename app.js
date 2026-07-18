@@ -364,13 +364,10 @@ function loadToppers() {
 function loadToppersShowcase() {
     db.collection('settings').doc('showcase').get().then(doc => {
         const showcaseExam = doc.exists && doc.data().exam ? doc.data().exam : 'yearly';
-        const showcaseTitle = doc.exists && doc.data().title ? doc.data().title : '';
+        const showcaseTitle = doc.exists && doc.data().title ? doc.data().title : 'সর্বশেষ পরীক্ষার সেরা শিক্ষার্থী';
 
-        if (showcaseTitle) {
-            document.getElementById('showcaseSubtitle').textContent = showcaseTitle;
-        }
+        document.getElementById('showcaseSubtitle').textContent = showcaseTitle;
 
-        // Get all classes
         const classes = ['Play', 'Nursery', 'KG', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
         const classNamesBn = {
             'Play': 'প্লে', 'Nursery': 'নার্সারি', 'KG': 'কেজি',
@@ -379,15 +376,13 @@ function loadToppersShowcase() {
             '9': 'ক্লাস ৯', '10': 'ক্লাস ১০'
         };
 
-        // Fetch results for all classes at once
         db.collection('results').where('exam', '==', showcaseExam).get().then(snap => {
+            const div = document.getElementById('toppersShowcase');
             if (snap.empty) {
-                document.getElementById('toppersShowcase').innerHTML =
-                    '<p style="text-align:center;color:#888;padding:30px;">এখনো কোনো ফলাফল দেওয়া হয়নি</p>';
+                div.innerHTML = '<p style="text-align:center;color:#888;">ফলাফল এখনো আপলোড করা হয়নি।</p>';
                 return;
             }
 
-            // Group by class
             const classResults = {};
             snap.forEach(doc => {
                 const r = doc.data();
@@ -399,44 +394,43 @@ function loadToppersShowcase() {
 
             let html = '';
             const rankClasses = ['first', 'second', 'third'];
-            const rankNums = ['১', '২', '৩'];
+            const rankIcons = ['🥇', '🥈', '🥉'];
 
-            for (let cls of classes) {
-                if (!classResults[cls] || classResults[cls].length === 0) continue;
+            classes.forEach(cls => {
+                if (!classResults[cls] || classResults[cls].length === 0) return;
 
                 classResults[cls].sort((a, b) => b.total - a.total);
                 const top3 = classResults[cls].slice(0, 3);
 
                 html += `<div class="showcase-class-card">
-                    <div class="showcase-class-title"><i class="fas fa-trophy"></i> ${classNamesBn[cls] || cls}</div>`;
+                    <div class="showcase-class-header">🏆 ${classNamesBn[cls] || cls}</div>
+                    <div class="showcase-body">`;
 
                 top3.forEach((t, i) => {
-                    html += `<div class="showcase-student ${rankClasses[i]}">
-                        <div class="showcase-rank">${rankNums[i]}</div>
-                        <img class="showcase-photo" src="${t.photo || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(t.studentName || 'S') + '&background=2d8a4e&color=fff&size=50'}" 
-                             onerror="this.src='https://ui-avatars.com/api/?name=${rankNums[i]}&background=2d8a4e&color=fff'">
-                        <div class="showcase-info">
-                            <h4>${t.studentName || ''}</h4>
-                            <p>রোল: ${t.roll || ''}</p>
+                    const studentPhoto = t.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.studentName)}&background=random&size=100`;
+                    
+                    html += `
+                    <div class="showcase-student ${rankClasses[i]}">
+                        <div class="showcase-rank-badge">${i+1}</div>
+                        <div class="showcase-img-container">
+                            <img src="${studentPhoto}" class="showcase-photo" onerror="this.src='https://via.placeholder.com/100?text=Student'">
                         </div>
-                        <div class="showcase-marks">${t.total}</div>
+                        <div class="showcase-details">
+                            <h4>${t.studentName}</h4>
+                            <p>রোল: ${t.roll}</p>
+                        </div>
+                        <div class="showcase-score">
+                            <span class="total-marks">${t.total}</span>
+                            <span class="label">Total</span>
+                        </div>
                     </div>`;
                 });
 
-                html += '</div>';
-            }
+                html += `</div></div>`;
+            });
 
-            if (!html) {
-                html = '<p style="text-align:center;color:#888;padding:30px;">ফলাফল পাওয়া যায়নি</p>';
-            }
-
-            document.getElementById('toppersShowcase').innerHTML = html;
+            div.innerHTML = html || '<p style="text-align:center;color:#888;">কোনো ডাটা পাওয়া যায়নি।</p>';
         });
-    }).catch(err => {
-        console.log('Showcase settings not found, using defaults');
-        // Fallback
-        document.getElementById('toppersShowcase').innerHTML =
-            '<p style="text-align:center;color:#888;padding:30px;">মেধাবী শিক্ষার্থীদের তথ্য শীঘ্রই আসছে</p>';
     });
 }
 
