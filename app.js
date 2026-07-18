@@ -376,64 +376,78 @@ function loadToppersShowcase() {
             '9': 'ক্লাস ৯', '10': 'ক্লাস ১০'
         };
 
-        db.collection('results').where('exam', '==', showcaseExam).get().then(snap => {
-            const div = document.getElementById('toppersShowcase');
-            if (snap.empty) {
-                div.innerHTML = '<p style="text-align:center;color:#888;">ফলাফল এখনো আপলোড করা হয়নি।</p>';
-                return;
-            }
-
-            const classResults = {};
-            snap.forEach(doc => {
-                const r = doc.data();
-                if (!classResults[r.class]) classResults[r.class] = [];
-                let total = 0;
-                for (let s in (r.subjects || {})) total += parseInt(r.subjects[s]) || 0;
-                classResults[r.class].push({ ...r, total });
+        // Fetch all students first (for photos)
+        db.collection('students').get().then(stuSnap => {
+            const studentPhotos = {};
+            stuSnap.forEach(stuDoc => {
+                const s = stuDoc.data();
+                const key = `${s.class}-${s.roll}`;
+                if (s.photo) studentPhotos[key] = s.photo;
             });
 
-            let html = '';
-            const rankClasses = ['first', 'second', 'third'];
-            const rankIcons = ['🥇', '🥈', '🥉'];
+            // Now fetch results
+            db.collection('results').where('exam', '==', showcaseExam).get().then(snap => {
+                const div = document.getElementById('toppersShowcase');
+                if (snap.empty) {
+                    div.innerHTML = '<p style="text-align:center;color:#888;">ফলাফল এখনো আপলোড করা হয়নি।</p>';
+                    return;
+                }
 
-            classes.forEach(cls => {
-                if (!classResults[cls] || classResults[cls].length === 0) return;
+                const classResults = {};
+                snap.forEach(doc => {
+                    const r = doc.data();
+                    if (!classResults[r.class]) classResults[r.class] = [];
+                    let total = 0;
+                    for (let s in (r.subjects || {})) total += parseInt(r.subjects[s]) || 0;
+                    
+                    // Get photo from student data if not in result
+                    const key = `${r.class}-${r.roll}`;
+                    const photo = r.photo || studentPhotos[key] || '';
+                    
+                    classResults[r.class].push({ ...r, total, photo });
+                });
 
-                classResults[cls].sort((a, b) => b.total - a.total);
-                const top3 = classResults[cls].slice(0, 3);
+                let html = '';
+                const rankClasses = ['first', 'second', 'third'];
 
-                html += `<div class="showcase-class-card">
-                    <div class="showcase-class-header">🏆 ${classNamesBn[cls] || cls}</div>
-                    <div class="showcase-body">`;
+                classes.forEach(cls => {
+                    if (!classResults[cls] || classResults[cls].length === 0) return;
 
-              top3.forEach((t, i) => {
-    const studentPhoto = t.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.studentName)}&background=2d8a4e&color=fff&size=100&bold=true`;
-    
-    html += `
-    <div class="showcase-student ${rankClasses[i]}">
-        <div class="showcase-rank-badge">${i+1}</div>
-        <div class="showcase-img-wrap">
-            <img src="${studentPhoto}" class="showcase-photo" onerror="this.src='https://ui-avatars.com/api/?name=S&background=2d8a4e&color=fff&size=100'">
-        </div>
-        <div class="showcase-details">
-            <h4>${t.studentName}</h4>
-            <p>রোল: ${t.roll}</p>
-        </div>
-        <div class="showcase-score">
-            <span class="total-marks">${t.total}</span>
-            <span class="label">Total</span>
-        </div>
-    </div>`;
-});
+                    classResults[cls].sort((a, b) => b.total - a.total);
+                    const top3 = classResults[cls].slice(0, 3);
 
-                html += `</div></div>`;
+                    html += `<div class="showcase-class-card">
+                        <div class="showcase-class-header">🏆 ${classNamesBn[cls] || cls}</div>
+                        <div class="showcase-body">`;
+
+                    top3.forEach((t, i) => {
+                        const studentPhoto = t.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.studentName)}&background=2d8a4e&color=fff&size=100&bold=true`;
+                        
+                        html += `
+                        <div class="showcase-student ${rankClasses[i]}">
+                            <div class="showcase-rank-badge">${i+1}</div>
+                            <div class="showcase-img-wrap">
+                                <img src="${studentPhoto}" class="showcase-photo" onerror="this.src='https://ui-avatars.com/api/?name=S&background=2d8a4e&color=fff&size=100'">
+                            </div>
+                            <div class="showcase-details">
+                                <h4>${t.studentName}</h4>
+                                <p>রোল: ${t.roll}</p>
+                            </div>
+                            <div class="showcase-score">
+                                <span class="total-marks">${t.total}</span>
+                                <span class="label">Total</span>
+                            </div>
+                        </div>`;
+                    });
+
+                    html += `</div></div>`;
+                });
+
+                div.innerHTML = html || '<p style="text-align:center;color:#888;">কোনো ডাটা পাওয়া যায়নি।</p>';
             });
-
-            div.innerHTML = html || '<p style="text-align:center;color:#888;">কোনো ডাটা পাওয়া যায়নি।</p>';
         });
     });
 }
-
 // ============================================
 // LOAD TEACHERS
 // ============================================
