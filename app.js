@@ -110,9 +110,12 @@ function loadSiteSettings() {
         if (s.nameEn) document.getElementById('siteNameEn').textContent = s.nameEn;
         if (s.location) document.getElementById('siteLocation').textContent = s.location;
         if (s.logo) {
-            document.getElementById('siteLogo').src = s.logo;
-            document.getElementById('siteLogo2').src = s.logo;
-        }
+           if (s.logo) {
+    const logo1 = document.getElementById('siteLogo');
+    const logo2 = document.getElementById('siteLogo2');
+    if (logo1) { logo1.src = s.logo; logo1.style.display = 'inline-block'; }
+    if (logo2) { logo2.src = s.logo; logo2.style.display = 'inline-block'; }
+}
         if (s.phone) {
             document.getElementById('topPhone').textContent = s.phone;
             document.getElementById('contactPhone').textContent = s.phone;
