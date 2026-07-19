@@ -111,28 +111,57 @@
 
         <!-- ★★★ SHOWCASE SETTINGS ★★★ -->
         <div id="tabShowcase" class="tab-panel">
-            <div class="admin-card">
-                <h3><i class="fas fa-trophy"></i> হোমপেজ মেধাবী শোকেস সেটিংস</h3>
-                <p style="color:#666;margin-bottom:15px;">হোমপেজে যে পরীক্ষার টপ স্টুডেন্ট দেখাবে সেটা এখান থেকে নির্বাচন করুন।</p>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>কোন পরীক্ষার ফলাফল দেখাবে?</label>
-                        <select id="showcaseExam">
-                            <option value="monthly">মাসিক | Monthly</option>
-                            <option value="1st-semester">প্রথম সেমিস্টার | 1st Semester</option>
-                            <option value="2nd-semester">দ্বিতীয় সেমিস্টার | 2nd Semester</option>
-                            <option value="yearly" selected>বার্ষিক | Yearly</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>শোকেস শিরোনাম (ঐচ্ছিক)</label>
-                        <input type="text" id="showcaseTitle" placeholder="যেমন: বার্ষিক পরীক্ষা ২০২৫ এর সেরা শিক্ষার্থী">
-                    </div>
-                </div>
-                <button onclick="saveShowcase()" class="btn">💾 শোকেস সেটিংস সেভ করুন</button>
-                <p id="showcaseMsg"></p>
+    <div class="admin-card">
+        <h3><i class="fas fa-trophy"></i> হোমপেজ মেধাবী শোকেস সেটিংস</h3>
+        <p style="color:#666;margin-bottom:15px;">হোমপেজে যে পরীক্ষার টপ স্টুডেন্ট দেখাবে সেটা এখান থেকে নির্বাচন করুন।</p>
+        <div class="form-row">
+            <div class="form-group">
+                <label>কোন পরীক্ষা?</label>
+                <select id="showcaseExam" onchange="updateShowcaseFilters()">
+                    <option value="monthly">মাসিক | Monthly</option>
+                    <option value="1st-semester">প্রথম সেমিস্টার | 1st Semester</option>
+                    <option value="2nd-semester">দ্বিতীয় সেমিস্টার | 2nd Semester</option>
+                    <option value="yearly" selected>বার্ষিক | Yearly</option>
+                </select>
+            </div>
+            <div class="form-group" id="showcaseMonthGroup" style="display:none;">
+                <label>মাস</label>
+                <select id="showcaseMonth">
+                    <option value="">সব মাস</option>
+                    <option value="জানুয়ারি">জানুয়ারি</option>
+                    <option value="ফেব্রুয়ারি">ফেব্রুয়ারি</option>
+                    <option value="মার্চ">মার্চ</option>
+                    <option value="এপ্রিল">এপ্রিল</option>
+                    <option value="মে">মে</option>
+                    <option value="জুন">জুন</option>
+                    <option value="জুলাই">জুলাই</option>
+                    <option value="আগস্ট">আগস্ট</option>
+                    <option value="সেপ্টেম্বর">সেপ্টেম্বর</option>
+                    <option value="অক্টোবর">অক্টোবর</option>
+                    <option value="নভেম্বর">নভেম্বর</option>
+                    <option value="ডিসেম্বর">ডিসেম্বর</option>
+                </select>
+            </div>
+            <div class="form-group" id="showcaseYearGroup">
+                <label>বছর</label>
+                <select id="showcaseYear">
+                    <option value="">সব বছর</option>
+                    <option value="2024">২০২৪</option>
+                    <option value="2025">২০২৫</option>
+                    <option value="2026">২০২৬</option>
+                    <option value="2027">২০২৭</option>
+                    <option value="2028">২০২৮</option>
+                </select>
             </div>
         </div>
+        <div class="form-group">
+            <label>শোকেস শিরোনাম (ঐচ্ছিক - না দিলে auto বানাবে)</label>
+            <input type="text" id="showcaseTitle" placeholder="যেমন: বার্ষিক পরীক্ষা ২০২৫ এর সেরা শিক্ষার্থী">
+        </div>
+        <button onclick="saveShowcase()" class="btn">💾 শোকেস সেটিংস সেভ করুন</button>
+        <p id="showcaseMsg"></p>
+    </div>
+</div>
 
         <!-- NOTICE -->
         <div id="tabNotice" class="tab-panel">
