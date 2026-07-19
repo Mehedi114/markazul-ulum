@@ -60,7 +60,13 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group"><label>অবস্থান</label><input type="text" id="setLocation"></div>
-                    <div class="form-group"><label>লোগো URL</label><input type="text" id="setLogo"></div>
+                    <div class="form-group">
+    <label>🖼️ লোগো আপলোড (স্কয়ার - অটো ক্রপ হবে)</label>
+    <input type="file" id="logoFile" accept="image/*" onchange="uploadLogoPhoto(this)" style="padding:10px;border:2px dashed #2d8a4e;border-radius:6px;background:#f0f7f0;cursor:pointer;width:100%;">
+    <p id="logoStatus" style="margin-top:5px;font-size:13px;"></p>
+    <input type="text" id="setLogo" placeholder="বা URL পেস্ট করুন">
+    <img id="logoPreview" src="" style="display:none;max-width:100px;margin-top:10px;border-radius:8px;border:2px solid #2d8a4e;">
+</div>
                 </div>
                 <h4 style="color:#1a5632;margin:15px 0 10px;">📞 যোগাযোগ</h4>
                 <div class="form-row">
@@ -78,7 +84,13 @@
                     <div class="form-group"><label>Slogan (English)</label><input type="text" id="setHeroSloganEn"></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label>ব্যাকগ্রাউন্ড ছবি URL</label><input type="text" id="setHeroBg"></div>
+                    <div class="form-group">
+    <label>🎨 কভার/হিরো ব্যাকগ্রাউন্ড আপলোড (Landscape - অটো ক্রপ হবে)</label>
+    <input type="file" id="coverFile" accept="image/*" onchange="uploadCoverPhoto(this)" style="padding:10px;border:2px dashed #2d8a4e;border-radius:6px;background:#f0f7f0;cursor:pointer;width:100%;">
+    <p id="coverStatus" style="margin-top:5px;font-size:13px;"></p>
+    <input type="text" id="setHeroBg" placeholder="বা URL পেস্ট করুন">
+    <img id="coverPreview" src="" style="display:none;max-width:250px;margin-top:10px;border-radius:8px;border:2px solid #2d8a4e;">
+</div>
                     <div class="form-group"><label>হেডার রঙ</label><input type="text" id="setHeaderColor"></div>
                 </div>
                 <h4 style="color:#1a5632;margin:15px 0 10px;">📖 পরিচিতি</h4>
