@@ -40,6 +40,7 @@
         <button onclick="showTab('tabShowcase',this)">🏆 শোকেস</button>
         <button onclick="showTab('tabNotice',this)">📢 নোটিশ</button>
         <button onclick="showTab('tabStudent',this)">👨‍🎓 শিক্ষার্থী</button>
+        <button onclick="showTab('tabSubjects',this)">📚 বিষয়সমূহ</button>
         <button onclick="showTab('tabQuickResult',this)">⚡ দ্রুত ফলাফল</button>
         <button onclick="showTab('tabResult',this)">📝 ফলাফল</button>
         <button onclick="showTab('tabTeacher',this)">👨‍🏫 শিক্ষক</button>
@@ -213,7 +214,32 @@
         <div id="adminStudentList"></div>
     </div>
 </div>
-
+<!-- ★★★ SUBJECTS MANAGEMENT ★★★ -->
+<div id="tabSubjects" class="tab-panel">
+    <div class="admin-card">
+        <h3><i class="fas fa-book"></i> বিষয় ব্যবস্থাপনা | Subject Management</h3>
+        <p style="color:#666;margin-bottom:15px;">এখানে যে বিষয়গুলো যোগ করবেন সেগুলো ফলাফল দেওয়ার সময় দেখাবে।</p>
+        <div class="form-row">
+            <div class="form-group">
+                <label>নতুন বিষয়ের নাম</label>
+                <input type="text" id="newSubjectName" placeholder="যেমন: পদার্থবিজ্ঞান">
+            </div>
+            <div class="form-group">
+                <label>ক্রম নম্বর (কোন সিরিয়ালে দেখাবে)</label>
+                <input type="number" id="newSubjectOrder" value="1" min="1">
+            </div>
+        </div>
+        <button onclick="addSubject()" class="btn">➕ বিষয় যোগ করুন</button>
+        <button onclick="addDefaultSubjects()" class="btn" style="background:#1976d2;color:white;margin-left:10px;">📋 ডিফল্ট সব বিষয় যোগ করুন</button>
+        <p id="subjectMsg"></p>
+    </div>
+    <div class="admin-card">
+        <h3><i class="fas fa-list"></i> সকল বিষয়ের তালিকা</h3>
+        <div id="subjectList"></div>
+    </div>
+</div>
+        
+        
         <!-- ★★★ QUICK RESULT - Student list থেকে দ্রুত ফলাফল ★★★ -->
 <div id="tabQuickResult" class="tab-panel">
     <div class="admin-card">
