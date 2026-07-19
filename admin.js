@@ -259,15 +259,30 @@ function loadSettingsForm() {
 // ============================================
 // SHOWCASE
 // ============================================
-function saveShowcase() {
-    const msg = document.getElementById('showcaseMsg');
-    db.collection('settings').doc('showcase').set({
-        exam: document.getElementById('showcaseExam').value,
-        title: document.getElementById('showcaseTitle').value.trim(),
-        updatedAt: new Date().toISOString()
-    }).then(() => {
-        msg.textContent = '✅ সেভ হয়েছে!'; msg.className = 'msg-success';
-    }).catch(e => { msg.textContent = '❌ সমস্যা!'; msg.className = 'msg-error'; });
+function loadShowcaseSettings() {
+    db.collection('settings').doc('showcase').get().then(doc => {
+        if (!doc.exists) return;
+        const s = doc.data();
+        if (s.exam) document.getElementById('showcaseExam').value = s.exam;
+        if (s.month) document.getElementById('showcaseMonth').value = s.month;
+        if (s.year) document.getElementById('showcaseYear').value = s.year;
+        if (s.title) document.getElementById('showcaseTitle').value = s.title;
+        updateShowcaseFilters();
+    });
+}
+
+function updateShowcaseFilters() {
+    const exam = document.getElementById('showcaseExam').value;
+    const monthGroup = document.getElementById('showcaseMonthGroup');
+    const yearGroup = document.getElementById('showcaseYearGroup');
+    if (exam === 'monthly') {
+        monthGroup.style.display = 'block';
+        yearGroup.style.display = 'block';
+    } else {
+        monthGroup.style.display = 'none';
+        document.getElementById('showcaseMonth').value = '';
+        yearGroup.style.display = 'block';
+    }
 }
 
 function loadShowcaseSettings() {
