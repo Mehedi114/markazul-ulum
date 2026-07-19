@@ -169,6 +169,7 @@ function showAdminPanel() {
     loadAdminTeachers();
     loadAdminGallery();
     loadAdminMessages();
+    loadSubjectList();
 }
 
 // ============================================
@@ -544,51 +545,59 @@ function loadQuickStudents() {
     const div = document.getElementById('quickStudentList');
     if (!cls) { div.innerHTML = ''; return; }
     div.innerHTML = '<p style="color:#888;padding:15px;">লোড হচ্ছে...</p>';
-    db.collection('students').where('class', '==', cls).get().then(snap => {
-        if (snap.empty) {
-            div.innerHTML = '<p style="color:#c62828;padding:15px;font-weight:600;">⚠️ এই ক্লাসে কোনো শিক্ষার্থী নেই।</p>';
+    
+    // First load subjects
+    db.collection('subjects').orderBy('order', 'asc').get().then(subSnap => {
+        const subjects = [];
+        subSnap.forEach(doc => subjects.push(doc.data().name));
+        
+        if (subjects.length === 0) {
+            div.innerHTML = '<p style="color:#c62828;padding:15px;font-weight:600;">⚠️ কোনো বিষয় যোগ করা নেই। "📚 বিষয়সমূহ" tab থেকে বিষয় যোগ করুন।</p>';
             return;
         }
-        let students = [];
-        snap.forEach(doc => {
-            const s = doc.data();
-            s.id = doc.id;
-            students.push(s);
+        
+        // Then load students
+        db.collection('students').where('class', '==', cls).get().then(snap => {
+            if (snap.empty) {
+                div.innerHTML = '<p style="color:#c62828;padding:15px;font-weight:600;">⚠️ এই ক্লাসে কোনো শিক্ষার্থী নেই।</p>';
+                return;
+            }
+            
+            let students = [];
+            snap.forEach(doc => {
+                const s = doc.data();
+                s.id = doc.id;
+                students.push(s);
+            });
+            students.sort((a, b) => (parseInt(a.roll)||0) - (parseInt(b.roll)||0));
+            
+            let html = `<p style="color:#2e7d32;font-weight:600;padding:10px;background:#e8f5e9;border-radius:6px;margin-bottom:15px;">✅ মোট ${students.length} জন শিক্ষার্থী | ${subjects.length} টি বিষয়</p>`;
+            
+            students.forEach(s => {
+                let subjectInputs = '';
+                subjects.forEach(sub => {
+                    subjectInputs += `<div class="form-group"><label>${sub}</label><input type="number" class="qr-sub" data-sub="${sub}" min="0" max="100"></div>`;
+                });
+                
+                html += `
+                <div class="quick-result-box" id="qr-${s.id}">
+                    <h4>📝 ${s.nameBn || s.name} | রোল: ${s.roll}</h4>
+                    <div style="margin:10px 0;padding:10px;background:white;border-radius:6px;">
+                        <label style="font-weight:600;color:#1a5632;margin-right:10px;">🎯 পরীক্ষা:</label>
+                        <select id="qrExam-${s.id}" style="padding:8px 12px;border:2px solid #2d8a4e;border-radius:5px;font-family:inherit;font-weight:600;">
+                            <option value="monthly">মাসিক</option>
+                            <option value="1st-semester">প্রথম সেমিস্টার</option>
+                            <option value="2nd-semester">দ্বিতীয় সেমিস্টার</option>
+                            <option value="yearly">বার্ষিক</option>
+                        </select>
+                    </div>
+                    <div class="form-row-3">${subjectInputs}</div>
+                    <button onclick="saveQuickResult('${s.id}','${(s.nameBn||s.name||'').replace(/'/g,"\\'")}','${s.roll}','${s.photo||''}')" class="btn btn-sm">💾 সেভ করুন</button>
+                    <span id="qrMsg-${s.id}" style="margin-left:10px;font-weight:600;"></span>
+                </div>`;
+            });
+            div.innerHTML = html;
         });
-        students.sort((a, b) => (parseInt(a.roll)||0) - (parseInt(b.roll)||0));
-        let html = `<p style="color:#2e7d32;font-weight:600;padding:10px;background:#e8f5e9;border-radius:6px;margin-bottom:15px;">✅ মোট ${students.length} জন শিক্ষার্থী</p>`;
-        students.forEach(s => {
-            html += `
-            <div class="quick-result-box" id="qr-${s.id}">
-                <h4>📝 ${s.nameBn || s.name} | রোল: ${s.roll}</h4>
-                <div style="margin:10px 0;padding:10px;background:white;border-radius:6px;">
-                    <label style="font-weight:600;color:#1a5632;margin-right:10px;">🎯 পরীক্ষা:</label>
-                    <select id="qrExam-${s.id}" style="padding:8px 12px;border:2px solid #2d8a4e;border-radius:5px;font-family:inherit;font-weight:600;">
-                        <option value="monthly">মাসিক</option>
-                        <option value="1st-semester">প্রথম সেমিস্টার</option>
-                        <option value="2nd-semester">দ্বিতীয় সেমিস্টার</option>
-                        <option value="yearly">বার্ষিক</option>
-                    </select>
-                </div>
-                <div class="form-row-3">
-                    <div class="form-group"><label>বাংলা</label><input type="number" class="qr-sub" data-sub="বাংলা" min="0" max="100"></div>
-                    <div class="form-group"><label>ইংরেজি</label><input type="number" class="qr-sub" data-sub="ইংরেজি" min="0" max="100"></div>
-                    <div class="form-group"><label>গণিত</label><input type="number" class="qr-sub" data-sub="গণিত" min="0" max="100"></div>
-                    <div class="form-group"><label>বিজ্ঞান</label><input type="number" class="qr-sub" data-sub="বিজ্ঞান" min="0" max="100"></div>
-                    <div class="form-group"><label>সমাজ</label><input type="number" class="qr-sub" data-sub="সমাজ" min="0" max="100"></div>
-                    <div class="form-group"><label>ইসলাম শিক্ষা</label><input type="number" class="qr-sub" data-sub="ইসলাম শিক্ষা" min="0" max="100"></div>
-                    <div class="form-group"><label>আরবি</label><input type="number" class="qr-sub" data-sub="আরবি" min="0" max="100"></div>
-                    <div class="form-group"><label>কুরআন</label><input type="number" class="qr-sub" data-sub="কুরআন" min="0" max="100"></div>
-                    <div class="form-group"><label>হাদীস</label><input type="number" class="qr-sub" data-sub="হাদীস" min="0" max="100"></div>
-                    <div class="form-group"><label>ফিকহ</label><input type="number" class="qr-sub" data-sub="ফিকহ" min="0" max="100"></div>
-                    <div class="form-group"><label>উর্দু</label><input type="number" class="qr-sub" data-sub="উর্দু" min="0" max="100"></div>
-                    <div class="form-group"><label>ICT</label><input type="number" class="qr-sub" data-sub="ICT" min="0" max="100"></div>
-                </div>
-                <button onclick="saveQuickResult('${s.id}','${(s.nameBn||s.name||'').replace(/'/g,"\\'")}','${s.roll}','${s.photo||''}')" class="btn btn-sm">💾 সেভ করুন</button>
-                <span id="qrMsg-${s.id}" style="margin-left:10px;font-weight:600;"></span>
-            </div>`;
-        });
-        div.innerHTML = html;
     });
 }
 
@@ -1087,3 +1096,105 @@ function downloadResultSheet() {
         alert('সমস্যা হয়েছে!');
     });
 }
+
+
+// ============================================
+// SUBJECT MANAGEMENT
+// ============================================
+function addSubject() {
+    const msg = document.getElementById('subjectMsg');
+    const name = document.getElementById('newSubjectName').value.trim();
+    const order = parseInt(document.getElementById('newSubjectOrder').value) || 1;
+    
+    if (!name) { 
+        msg.textContent = '❌ বিষয়ের নাম দিন!'; 
+        msg.style.color = '#c62828'; 
+        return; 
+    }
+    
+    // Check duplicate
+    db.collection('subjects').where('name', '==', name).get().then(snap => {
+        if (!snap.empty) {
+            msg.textContent = '⚠️ এই বিষয় ইতিমধ্যে আছে!';
+            msg.style.color = '#c62828';
+            return;
+        }
+        
+        db.collection('subjects').add({
+            name, order,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+            msg.textContent = '✅ বিষয় যোগ হয়েছে!';
+            msg.style.color = '#2e7d32';
+            document.getElementById('newSubjectName').value = '';
+            loadSubjectList();
+        });
+    });
+}
+
+function addDefaultSubjects() {
+    const defaultSubjects = [
+        'বাংলা', 'ইংরেজি', 'গণিত', 'সাধারণ জ্ঞান',
+        'পরিবেশ পরিচিতি ও সমাজ', 'বিজ্ঞান', 'ইসলাম শিক্ষা',
+        'উর্দু শিক্ষা', 'আরবি শিক্ষা', 'তাজবীদ শিক্ষা',
+        'কালিমা মাসায়েল', 'হাদিস শরীফ', 'আসমাউল হুসনা',
+        'আদইয়ায়ে সালাত', 'আদইয়ায়ে মাসনুনা', 'কোরআন শরীফ',
+        'তাজবীদ ও মাখরাজ', 'হিফজুল কুরআন'
+    ];
+    
+    const msg = document.getElementById('subjectMsg');
+    if (!confirm('সব ডিফল্ট বিষয় যোগ করবেন? (ইতিমধ্যে থাকলে এড়িয়ে যাবে)')) return;
+    
+    msg.textContent = '⏳ যোগ হচ্ছে...';
+    msg.style.color = '#888';
+    
+    db.collection('subjects').get().then(snap => {
+        const existing = [];
+        snap.forEach(doc => existing.push(doc.data().name));
+        
+        let added = 0;
+        let promises = [];
+        
+        defaultSubjects.forEach((name, i) => {
+            if (!existing.includes(name)) {
+                promises.push(
+                    db.collection('subjects').add({
+                        name,
+                        order: i + 1,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    })
+                );
+                added++;
+            }
+        });
+        
+        Promise.all(promises).then(() => {
+            msg.textContent = `✅ ${added} টি নতুন বিষয় যোগ হয়েছে!`;
+            msg.style.color = '#2e7d32';
+            loadSubjectList();
+        });
+    });
+}
+
+function loadSubjectList() {
+    db.collection('subjects').orderBy('order', 'asc').get().then(snap => {
+        const div = document.getElementById('subjectList');
+        if (snap.empty) { 
+            div.innerHTML = '<p style="color:#888;">কোনো বিষয় নেই। উপরের বাটন থেকে "ডিফল্ট সব বিষয় যোগ করুন" ক্লিক করুন।</p>'; 
+            return; 
+        }
+        
+        let html = '<table class="data-table"><thead><tr><th>ক্রম</th><th>বিষয়ের নাম</th><th>মুছুন</th></tr></thead><tbody>';
+        snap.forEach(doc => {
+            const s = doc.data();
+            html += `<tr>
+                <td>${s.order || ''}</td>
+                <td>${s.name}</td>
+                <td><button class="btn-delete" onclick="deleteDoc('subjects','${doc.id}',loadSubjectList)">🗑️</button></td>
+            </tr>`;
+        });
+        div.innerHTML = html + '</tbody></table>';
+    });
+}
+
+// Load subjects when admin panel opens
