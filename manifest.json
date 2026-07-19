@@ -1,0 +1,25 @@
+{
+    "name": "মারকাজুল উলুম ক্যাডেট স্কুল অ্যান্ড মাদ্রাসা",
+    "short_name": "Markazul Ulum",
+    "description": "মারকাজুল উলুম ক্যাডেট স্কুল অ্যান্ড মাদ্রাসা, পাড়েরহাট এর অফিসিয়াল ওয়েবসাইট",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#1a5632",
+    "theme_color": "#1a5632",
+    "lang": "bn",
+    "icons": [
+        {
+            "src": "https://i.postimg.cc/SN9YCsbY/Chat-GPT-Image-Jul-18-2026-08-14-28-PM.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "https://i.postimg.cc/SN9YCsbY/Chat-GPT-Image-Jul-18-2026-08-14-28-PM.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
