@@ -328,14 +328,109 @@ function addStudent() {
     };
     if (!data.nameBn && !data.name) { msg.textContent = 'নাম দিন!'; msg.className = 'msg-error'; return; }
     if (!data.roll) { msg.textContent = 'রোল দিন!'; msg.className = 'msg-error'; return; }
-    msg.textContent = 'যোগ হচ্ছে...'; msg.style.color = '#888';
+    
+    msg.textContent = '⏳ যাচাই করা হচ্ছে...'; msg.style.color = '#888';
+    
+    // Check for duplicates in same class
+    db.collection('students').where('class', '==', data.class).get().then(snap => {
+        let duplicate = null;
+        let duplicateReason = '';
+        
+        snap.forEach(doc => {
+            const existing = doc.data();
+            
+            // Check 1: Same Roll in same class
+            if (existing.roll === data.roll) {
+                duplicate = existing;
+                duplicateReason = `এই ক্লাসে রোল "${data.roll}" নম্বর দিয়ে "${existing.nameBn || existing.name}" ইতিমধ্যে আছে!`;
+                return;
+            }
+            
+            // Check 2: Same Bengali name in same class
+            if (data.nameBn && existing.nameBn && existing.nameBn.trim() === data.nameBn) {
+                duplicate = existing;
+                duplicateReason = `এই ক্লাসে "${data.nameBn}" নামে শিক্ষার্থী ইতিমধ্যে আছে (রোল: ${existing.roll})!`;
+                return;
+            }
+            
+            // Check 3: Same English name in same class
+            if (data.name && existing.name && existing.name.toLowerCase().trim() === data.name.toLowerCase()) {
+                duplicate = existing;
+                duplicateReason = `এই ক্লাসে "${data.name}" নামে শিক্ষার্থী ইতিমধ্যে আছে (রোল: ${existing.roll})!`;
+                return;
+            }
+            
+            // Check 4: Same DOB + Father name (strong match)
+            if (data.dob && data.fatherName && existing.dob === data.dob && 
+                existing.fatherName && existing.fatherName.trim() === data.fatherName) {
+                duplicate = existing;
+                duplicateReason = `একই জন্ম তারিখ ও পিতার নামে "${existing.nameBn || existing.name}" (রোল: ${existing.roll}) ইতিমধ্যে আছে!`;
+                return;
+            }
+            
+            // Check 5: Same Phone number (if both provided)
+            if (data.phone && existing.phone && existing.phone.trim() === data.phone && data.phone.length >= 10) {
+                duplicate = existing;
+                duplicateReason = `এই ফোন নম্বর "${data.phone}" দিয়ে "${existing.nameBn || existing.name}" (রোল: ${existing.roll}) ইতিমধ্যে আছে!`;
+                return;
+            }
+        });
+        
+        if (duplicate) {
+            msg.innerHTML = `⚠️ <strong>ডুপ্লিকেট!</strong><br>${duplicateReason}<br><small>যদি এটা ভিন্ন শিক্ষার্থী হয়, তাহলে "জোর করে যোগ করুন" বাটন চাপুন।</small>`;
+            msg.style.color = '#c62828';
+            msg.style.background = '#ffebee';
+            msg.style.padding = '10px';
+            msg.style.borderRadius = '6px';
+            msg.style.borderLeft = '4px solid #c62828';
+            
+            // Add force button
+            const forceBtn = document.createElement('button');
+            forceBtn.className = 'btn btn-sm';
+            forceBtn.style.background = '#ff9800';
+            forceBtn.style.color = 'white';
+            forceBtn.style.marginTop = '10px';
+            forceBtn.textContent = '⚠️ জোর করে যোগ করুন';
+            forceBtn.onclick = function() {
+                forceAddStudent(data);
+                forceBtn.remove();
+            };
+            msg.appendChild(forceBtn);
+            return;
+        }
+        
+        // No duplicate - add normally
+        saveNewStudent(data, msg);
+    }).catch(e => {
+        console.error(e);
+        msg.textContent = '❌ যাচাই সমস্যা!'; msg.style.color = '#c62828';
+    });
+}
+
+function forceAddStudent(data) {
+    const msg = document.getElementById('stuMsg');
+    msg.textContent = 'যোগ হচ্ছে...';
+    msg.style.background = '';
+    msg.style.padding = '';
+    msg.style.borderLeft = '';
+    saveNewStudent(data, msg);
+}
+
+function saveNewStudent(data, msg) {
     db.collection('students').add(data).then(() => {
-        msg.textContent = '✅ শিক্ষার্থী যোগ হয়েছে!'; msg.className = 'msg-success';
+        msg.innerHTML = '✅ শিক্ষার্থী যোগ হয়েছে!';
+        msg.style.color = '#2e7d32';
+        msg.style.background = '';
+        msg.style.padding = '';
+        msg.style.borderLeft = '';
         ['stuNameBn','stuName','stuRoll','stuFather','stuMother','stuPhone','stuAddress','stuPhoto'].forEach(id => document.getElementById(id).value = '');
         document.getElementById('stuPhotoFile').value = '';
         document.getElementById('stuPhotoPreview').style.display = 'none';
         document.getElementById('stuPhotoStatus').textContent = '';
-    }).catch(e => { msg.textContent = '❌ সমস্যা!'; msg.className = 'msg-error'; });
+    }).catch(e => { 
+        msg.textContent = '❌ সমস্যা!'; 
+        msg.style.color = '#c62828'; 
+    });
 }
 
 function loadAdminStudents() {
