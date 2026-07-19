@@ -19,20 +19,31 @@ const auth = firebase.auth();
 // ============================================
 const IMGBB_API_KEY = "b2ca23b16c7cdc5b0e3f3d0420ba606f";
 
-async function uploadPhotoToImgBB(file, statusElId, hiddenInputId, previewId) {
+// ============================================
+// AUTO CROP + UPLOAD TO IMGBB
+// ============================================
+async function uploadPhotoToImgBB(file, statusElId, hiddenInputId, previewId, cropType) {
     const statusEl = document.getElementById(statusElId);
     const hiddenInput = document.getElementById(hiddenInputId);
     const preview = document.getElementById(previewId);
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-        statusEl.textContent = '❌ ছবির সাইজ ৫MB এর কম হতে হবে!';
+    if (file.size > 10 * 1024 * 1024) {
+        statusEl.textContent = '❌ ছবির সাইজ ১০MB এর কম হতে হবে!';
         statusEl.style.color = '#c62828';
         return;
     }
-    statusEl.textContent = '⏳ আপলোড হচ্ছে...';
+    
+    statusEl.textContent = '⏳ ছবি প্রসেস হচ্ছে...';
     statusEl.style.color = '#1976d2';
+    
+    // Auto crop
+    const croppedBlob = await cropImage(file, cropType);
+    
+    statusEl.textContent = '⏳ আপলোড হচ্ছে...';
+    
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('image', croppedBlob);
+    
     try {
         const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
             method: 'POST', body: formData
@@ -54,12 +65,79 @@ async function uploadPhotoToImgBB(file, statusElId, hiddenInputId, previewId) {
     }
 }
 
-function uploadStudentPhoto(input) { uploadPhotoToImgBB(input.files[0], 'stuPhotoStatus', 'stuPhoto', 'stuPhotoPreview'); }
-function uploadTeacherPhoto(input) { uploadPhotoToImgBB(input.files[0], 'tchPhotoStatus', 'tchPhoto', 'tchPhotoPreview'); }
-function uploadGalleryPhoto(input) { uploadPhotoToImgBB(input.files[0], 'galPhotoStatus', 'galURL', 'galPhotoPreview'); }
-function uploadEditStudentPhoto(input) { uploadPhotoToImgBB(input.files[0], 'editStuPhotoStatus', 'editStuPhoto', 'editStuPhotoPreview'); }
-function uploadEditTeacherPhoto(input) { uploadPhotoToImgBB(input.files[0], 'editTchPhotoStatus', 'editTchPhoto', 'editTchPhotoPreview'); }
+// ============================================
+// IMAGE CROP FUNCTION
+// ============================================
+function cropImage(file, type) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                let targetWidth, targetHeight, sx, sy, sWidth, sHeight;
+                
+                if (type === 'cover') {
+                    // Cover: 16:6 aspect ratio (1600x600)
+                    targetWidth = 1600;
+                    targetHeight = 600;
+                    const targetRatio = targetWidth / targetHeight;
+                    const imgRatio = img.width / img.height;
+                    
+                    if (imgRatio > targetRatio) {
+                        sHeight = img.height;
+                        sWidth = img.height * targetRatio;
+                        sx = (img.width - sWidth) / 2;
+                        sy = 0;
+                    } else {
+                        sWidth = img.width;
+                        sHeight = img.width / targetRatio;
+                        sx = 0;
+                        sy = (img.height - sHeight) / 2;
+                    }
+                } else if (type === 'logo') {
+                    // Logo: Square (300x300)
+                    targetWidth = 300;
+                    targetHeight = 300;
+                    const size = Math.min(img.width, img.height);
+                    sx = (img.width - size) / 2;
+                    sy = (img.height - size) / 2;
+                    sWidth = size;
+                    sHeight = size;
+                } else {
+                    // Default: Square (500x500) for students, teachers, gallery
+                    targetWidth = 500;
+                    targetHeight = 500;
+                    const size = Math.min(img.width, img.height);
+                    sx = (img.width - size) / 2;
+                    sy = (img.height - size) / 2;
+                    sWidth = size;
+                    sHeight = size;
+                }
+                
+                canvas.width = targetWidth;
+                canvas.height = targetHeight;
+                ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, targetWidth, targetHeight);
+                
+                canvas.toBlob(function(blob) {
+                    resolve(blob);
+                }, 'image/jpeg', 0.9);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
 
+function uploadStudentPhoto(input) { uploadPhotoToImgBB(input.files[0], 'stuPhotoStatus', 'stuPhoto', 'stuPhotoPreview', 'square'); }
+function uploadTeacherPhoto(input) { uploadPhotoToImgBB(input.files[0], 'tchPhotoStatus', 'tchPhoto', 'tchPhotoPreview', 'square'); }
+function uploadGalleryPhoto(input) { uploadPhotoToImgBB(input.files[0], 'galPhotoStatus', 'galURL', 'galPhotoPreview', 'square'); }
+function uploadEditStudentPhoto(input) { uploadPhotoToImgBB(input.files[0], 'editStuPhotoStatus', 'editStuPhoto', 'editStuPhotoPreview', 'square'); }
+function uploadEditTeacherPhoto(input) { uploadPhotoToImgBB(input.files[0], 'editTchPhotoStatus', 'editTchPhoto', 'editTchPhotoPreview', 'square'); }
+function uploadLogoPhoto(input) { uploadPhotoToImgBB(input.files[0], 'logoStatus', 'setLogo', 'logoPreview', 'logo'); }
+function uploadCoverPhoto(input) { uploadPhotoToImgBB(input.files[0], 'coverStatus', 'setHeroBg', 'coverPreview', 'cover'); }
 // ============================================
 // AUTH
 // ============================================
