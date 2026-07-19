@@ -315,49 +315,102 @@ const gpa = avgPercent >= 80 ? '5.00' : avgPercent >= 70 ? '4.00' : avgPercent >
 // ============================================
 // LOAD TOPPERS (Search)
 // ============================================
+function updateTopperFilters() {
+    const exam = document.getElementById('topperExam').value;
+    const monthSel = document.getElementById('topperMonth');
+    const yearSel = document.getElementById('topperYear');
+    
+    if (exam === 'monthly') {
+        monthSel.style.display = 'inline-block';
+        yearSel.style.display = 'inline-block';
+    } else if (exam === '1st-semester' || exam === '2nd-semester' || exam === 'yearly') {
+        monthSel.style.display = 'none';
+        monthSel.value = '';
+        yearSel.style.display = 'inline-block';
+    } else {
+        monthSel.style.display = 'none';
+        yearSel.style.display = 'none';
+        monthSel.value = '';
+        yearSel.value = '';
+    }
+    loadToppers();
+}
+
 function loadToppers() {
     const cls = document.getElementById('topperClass').value;
     const exam = document.getElementById('topperExam').value;
+    const month = document.getElementById('topperMonth').value;
+    const year = document.getElementById('topperYear').value;
     const div = document.getElementById('topperDisplay');
     if (!cls || !exam) { div.innerHTML = ''; return; }
 
     div.innerHTML = '<div class="loading">লোড হচ্ছে...</div>';
 
-    db.collection('results').where('class', '==', cls).where('exam', '==', exam)
-        .get().then(snap => {
-            if (snap.empty) {
-                div.innerHTML = '<p style="text-align:center;color:#888;padding:20px;">ফলাফল পাওয়া যায়নি</p>';
-                return;
-            }
-            let results = [];
-            snap.forEach(doc => {
-                const r = doc.data();
-                let total = 0;
-                for (let s in (r.subjects || {})) total += parseInt(r.subjects[s]) || 0;
-                results.push({ ...r, total });
-            });
-            results.sort((a, b) => b.total - a.total);
-            const top3 = results.slice(0, 3);
-            const cls_arr = ['gold', 'silver', 'bronze'];
-            const pos = ['১ম | 1st', '২য় | 2nd', '৩য় | 3rd'];
-            const nums = ['১', '২', '৩'];
-
-            let html = '';
-            top3.forEach((t, i) => {
-                html += `<div class="topper-card ${cls_arr[i]}">
-                    <div class="topper-badge">${nums[i]}</div>
-                    <img src="${t.photo || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(t.studentName || 'S') + '&background=2d8a4e&color=fff&size=90'}" 
-                         onerror="this.src='https://ui-avatars.com/api/?name=${nums[i]}&background=2d8a4e&color=fff'">
-                    <h3>${t.studentName || 'শিক্ষার্থী'}</h3>
-                    <p class="topper-roll">রোল: ${t.roll}</p>
-                    <p class="topper-marks">${t.total} নম্বর</p>
-                    <p class="topper-pos">${pos[i]}</p>
-                </div>`;
-            });
-            div.innerHTML = html;
-        }).catch(err => {
-            div.innerHTML = '<p style="color:red;text-align:center;">সমস্যা হয়েছে</p>';
+    // Load student photos first
+    db.collection('students').get().then(stuSnap => {
+        const studentPhotos = {};
+        stuSnap.forEach(stuDoc => {
+            const s = stuDoc.data();
+            const key = `${s.class}-${s.roll}`;
+            if (s.photo) studentPhotos[key] = s.photo;
         });
+
+        db.collection('results').where('class', '==', cls).where('exam', '==', exam)
+            .get().then(snap => {
+                if (snap.empty) {
+                    div.innerHTML = '<p style="text-align:center;color:#888;padding:20px;">ফলাফল পাওয়া যায়নি</p>';
+                    return;
+                }
+                
+                // Filter by month/year and dedupe by roll
+                const uniqueResults = {};
+                snap.forEach(doc => {
+                    const r = doc.data();
+                    if (month && r.month !== month) return;
+                    if (year && r.year !== year && r.year !== parseInt(year).toString()) return;
+                    
+                    let total = 0;
+                    for (let s in (r.subjects || {})) total += parseInt(r.subjects[s]) || 0;
+                    
+                    const key = `${r.class}-${r.roll}`;
+                    const photo = r.photo || studentPhotos[key] || '';
+                    
+                    if (!uniqueResults[r.roll] || uniqueResults[r.roll].total < total) {
+                        uniqueResults[r.roll] = { ...r, total, photo };
+                    }
+                });
+                
+                let results = Object.values(uniqueResults);
+                
+                if (results.length === 0) {
+                    div.innerHTML = '<p style="text-align:center;color:#888;padding:20px;">এই সময়ের কোনো ফলাফল নেই</p>';
+                    return;
+                }
+                
+                results.sort((a, b) => b.total - a.total);
+                const top3 = results.slice(0, 3);
+                const cls_arr = ['gold', 'silver', 'bronze'];
+                const pos = ['১ম | 1st', '২য় | 2nd', '৩য় | 3rd'];
+                const nums = ['১', '২', '৩'];
+
+                let html = '';
+                top3.forEach((t, i) => {
+                    const studentPhoto = t.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.studentName)}&background=2d8a4e&color=fff&size=90&bold=true`;
+                    html += `<div class="topper-card ${cls_arr[i]}">
+                        <div class="topper-badge">${nums[i]}</div>
+                        <img src="${studentPhoto}" onerror="this.src='https://ui-avatars.com/api/?name=${nums[i]}&background=2d8a4e&color=fff'">
+                        <h3>${t.studentName || 'শিক্ষার্থী'}</h3>
+                        <p class="topper-roll">রোল: ${t.roll}</p>
+                        <p class="topper-marks">${t.total} নম্বর</p>
+                        <p class="topper-pos">${pos[i]}</p>
+                    </div>`;
+                });
+                div.innerHTML = html;
+            }).catch(err => {
+                console.error(err);
+                div.innerHTML = '<p style="color:red;text-align:center;">সমস্যা হয়েছে</p>';
+            });
+    });
 }
 
 // ============================================
