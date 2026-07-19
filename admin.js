@@ -501,36 +501,69 @@ function saveQuickResult(stuId, stuName, roll, photo) {
     const cls = document.getElementById('qrClass').value;
     const exam = document.getElementById('qrExam-' + stuId).value;
     const fullMark = parseInt(document.getElementById('qrFullMark').value) || 100;
+    const month = document.getElementById('qrMonth').value;
+    const year = document.getElementById('qrYear').value;
     const msg = document.getElementById('qrMsg-' + stuId);
     const box = document.getElementById('qr-' + stuId);
     const inputs = box.querySelectorAll('.qr-sub');
-    const subjects = {};
+    const newSubjects = {};
     inputs.forEach(inp => {
-        if (inp.value !== '') subjects[inp.dataset.sub] = parseInt(inp.value);
+        if (inp.value !== '') newSubjects[inp.dataset.sub] = parseInt(inp.value);
     });
-    if (Object.keys(subjects).length === 0) {
+    if (Object.keys(newSubjects).length === 0) {
         msg.textContent = '❌ নম্বর দিন!'; msg.style.color = '#c62828'; return;
     }
     msg.textContent = '⏳ সেভ হচ্ছে...'; msg.style.color = '#888';
-    db.collection('results')
-        .where('class', '==', cls).where('exam', '==', exam).where('roll', '==', roll)
-        .get().then(snap => {
-            const month = document.getElementById('qrMonth').value;
-const year = document.getElementById('qrYear').value;
-const data = { class: cls, exam, studentName: stuName, roll, subjects, fullMark, month, year, photo, timestamp: firebase.firestore.FieldValue.serverTimestamp() };
-            if (snap.empty) {
-                return db.collection('results').add(data);
-            } else {
-               return db.collection('results').doc(snap.docs[0].id).update({ subjects, studentName: stuName, photo, fullMark, month, year, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+    
+    // Check if result exists for this class + exam + roll + month + year
+    let query = db.collection('results')
+        .where('class', '==', cls)
+        .where('exam', '==', exam)
+        .where('roll', '==', roll);
+    
+    query.get().then(snap => {
+        // Filter by month/year in code (Firebase can't do 5 where clauses)
+        let existingDoc = null;
+        snap.forEach(doc => {
+            const r = doc.data();
+            const monthMatch = (!month && !r.month) || r.month === month;
+            const yearMatch = (!year && !r.year) || r.year === year || r.year === parseInt(year).toString();
+            if (monthMatch && yearMatch) {
+                existingDoc = doc;
             }
-        }).then(() => {
-            msg.textContent = '✅ সেভ হয়েছে!'; msg.style.color = '#2e7d32';
-            setTimeout(() => { msg.textContent = ''; }, 3000);
-        }).catch(e => {
-            msg.textContent = '❌ সমস্যা!'; msg.style.color = '#c62828';
         });
+        
+        if (!existingDoc) {
+            // New result - create fresh
+            const data = { 
+                class: cls, exam, studentName: stuName, roll, 
+                subjects: newSubjects, fullMark, month, year, photo, 
+                timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+            };
+            return db.collection('results').add(data);
+        } else {
+            // Merge existing subjects with new ones
+            const existingData = existingDoc.data();
+            const mergedSubjects = { ...(existingData.subjects || {}), ...newSubjects };
+            return db.collection('results').doc(existingDoc.id).update({
+                subjects: mergedSubjects,
+                studentName: stuName,
+                photo: photo || existingData.photo,
+                fullMark,
+                month, year,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+    }).then(() => {
+        msg.textContent = '✅ সেভ হয়েছে!'; msg.style.color = '#2e7d32';
+        // Clear the inputs after save
+        inputs.forEach(inp => inp.value = '');
+        setTimeout(() => { msg.textContent = ''; }, 3000);
+    }).catch(e => {
+        console.error(e);
+        msg.textContent = '❌ সমস্যা!'; msg.style.color = '#c62828';
+    });
 }
-
 // ============================================
 // FULL RESULT
 // ============================================
