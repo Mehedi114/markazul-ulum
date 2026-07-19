@@ -1213,3 +1213,62 @@ function loadSubjectList() {
 }
 
 // Load subjects when admin panel opens
+
+
+// ============================================
+// SHOWCASE FUNCTIONS (Fixed)
+// ============================================
+function saveShowcase() {
+    const msg = document.getElementById('showcaseMsg');
+    const exam = document.getElementById('showcaseExam').value;
+    const monthEl = document.getElementById('showcaseMonth');
+    const yearEl = document.getElementById('showcaseYear');
+    const titleEl = document.getElementById('showcaseTitle');
+    
+    const data = {
+        exam: exam || 'yearly',
+        month: monthEl ? monthEl.value : '',
+        year: yearEl ? yearEl.value : '',
+        title: titleEl ? titleEl.value.trim() : '',
+        updatedAt: new Date().toISOString()
+    };
+    
+    msg.textContent = '⏳ সেভ হচ্ছে...';
+    msg.style.color = '#888';
+    
+    db.collection('settings').doc('showcase').set(data).then(() => {
+        msg.textContent = '✅ সেভ হয়েছে!';
+        msg.style.color = '#2e7d32';
+    }).catch(e => {
+        console.error('Save error:', e);
+        msg.textContent = '❌ সমস্যা: ' + e.message;
+        msg.style.color = '#c62828';
+    });
+}
+
+function loadShowcaseSettings() {
+    db.collection('settings').doc('showcase').get().then(doc => {
+        if (!doc.exists) return;
+        const s = doc.data();
+        if (s.exam) document.getElementById('showcaseExam').value = s.exam;
+        if (s.month && document.getElementById('showcaseMonth')) document.getElementById('showcaseMonth').value = s.month;
+        if (s.year && document.getElementById('showcaseYear')) document.getElementById('showcaseYear').value = s.year;
+        if (s.title) document.getElementById('showcaseTitle').value = s.title;
+        if (typeof updateShowcaseFilters === 'function') updateShowcaseFilters();
+    });
+}
+
+function updateShowcaseFilters() {
+    const exam = document.getElementById('showcaseExam').value;
+    const monthGroup = document.getElementById('showcaseMonthGroup');
+    const yearGroup = document.getElementById('showcaseYearGroup');
+    if (!monthGroup || !yearGroup) return;
+    if (exam === 'monthly') {
+        monthGroup.style.display = 'block';
+        yearGroup.style.display = 'block';
+    } else {
+        monthGroup.style.display = 'none';
+        document.getElementById('showcaseMonth').value = '';
+        yearGroup.style.display = 'block';
+    }
+}
