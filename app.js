@@ -364,7 +364,23 @@ function loadToppers() {
 function loadToppersShowcase() {
     db.collection('settings').doc('showcase').get().then(doc => {
         const showcaseExam = doc.exists && doc.data().exam ? doc.data().exam : 'yearly';
-        const showcaseTitle = doc.exists && doc.data().title ? doc.data().title : 'সর্বশেষ পরীক্ষার সেরা শিক্ষার্থী';
+        const showcaseMonth = doc.exists && doc.data().month ? doc.data().month : '';
+        const showcaseYear = doc.exists && doc.data().year ? doc.data().year : '';
+        let showcaseTitle = doc.exists && doc.data().title ? doc.data().title : '';
+
+        // Auto title if not provided
+        if (!showcaseTitle) {
+            const examNamesShort = {
+                'monthly': 'মাসিক পরীক্ষা',
+                '1st-semester': 'প্রথম সেমিস্টার',
+                '2nd-semester': 'দ্বিতীয় সেমিস্টার',
+                'yearly': 'বার্ষিক পরীক্ষা'
+            };
+            showcaseTitle = examNamesShort[showcaseExam] || 'সর্বশেষ পরীক্ষা';
+            if (showcaseMonth) showcaseTitle += ' - ' + showcaseMonth;
+            if (showcaseYear) showcaseTitle += ' ' + showcaseYear;
+            showcaseTitle += ' এর সেরা শিক্ষার্থী';
+        }
 
         document.getElementById('showcaseSubtitle').textContent = showcaseTitle;
 
@@ -376,7 +392,7 @@ function loadToppersShowcase() {
             '9': 'ক্লাস ৯', '10': 'ক্লাস ১০'
         };
 
-        // Fetch all students first (for photos)
+        // Load student photos
         db.collection('students').get().then(stuSnap => {
             const studentPhotos = {};
             stuSnap.forEach(stuDoc => {
@@ -385,7 +401,7 @@ function loadToppersShowcase() {
                 if (s.photo) studentPhotos[key] = s.photo;
             });
 
-            // Now fetch results
+            // Load results
             db.collection('results').where('exam', '==', showcaseExam).get().then(snap => {
                 const div = document.getElementById('toppersShowcase');
                 if (snap.empty) {
@@ -393,28 +409,42 @@ function loadToppersShowcase() {
                     return;
                 }
 
+                // Group and merge by class + roll (avoid duplicates)
                 const classResults = {};
                 snap.forEach(doc => {
                     const r = doc.data();
-                    if (!classResults[r.class]) classResults[r.class] = [];
+                    
+                    // Filter by month/year
+                    if (showcaseMonth && r.month !== showcaseMonth) return;
+                    if (showcaseYear && r.year !== showcaseYear && r.year !== parseInt(showcaseYear).toString()) return;
+                    
+                    if (!classResults[r.class]) classResults[r.class] = {};
+                    
+                    const rollKey = r.roll;
                     let total = 0;
                     for (let s in (r.subjects || {})) total += parseInt(r.subjects[s]) || 0;
                     
-                    // Get photo from student data if not in result
                     const key = `${r.class}-${r.roll}`;
                     const photo = r.photo || studentPhotos[key] || '';
                     
-                    classResults[r.class].push({ ...r, total, photo });
+                    // If same roll exists, keep the one with higher total
+                    if (!classResults[r.class][rollKey] || classResults[r.class][rollKey].total < total) {
+                        classResults[r.class][rollKey] = { ...r, total, photo };
+                    }
                 });
 
                 let html = '';
                 const rankClasses = ['first', 'second', 'third'];
 
                 classes.forEach(cls => {
-                    if (!classResults[cls] || classResults[cls].length === 0) return;
-
-                    classResults[cls].sort((a, b) => b.total - a.total);
-                    const top3 = classResults[cls].slice(0, 3);
+                    if (!classResults[cls]) return;
+                    
+                    // Convert object to array
+                    const studentsInClass = Object.values(classResults[cls]);
+                    if (studentsInClass.length === 0) return;
+                    
+                    studentsInClass.sort((a, b) => b.total - a.total);
+                    const top3 = studentsInClass.slice(0, 3);
 
                     html += `<div class="showcase-class-card">
                         <div class="showcase-class-header">🏆 ${classNamesBn[cls] || cls}</div>
@@ -422,7 +452,6 @@ function loadToppersShowcase() {
 
                     top3.forEach((t, i) => {
                         const studentPhoto = t.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.studentName)}&background=2d8a4e&color=fff&size=100&bold=true`;
-                        
                         html += `
                         <div class="showcase-student ${rankClasses[i]}">
                             <div class="showcase-rank-badge">${i+1}</div>
@@ -443,7 +472,7 @@ function loadToppersShowcase() {
                     html += `</div></div>`;
                 });
 
-                div.innerHTML = html || '<p style="text-align:center;color:#888;">কোনো ডাটা পাওয়া যায়নি।</p>';
+                div.innerHTML = html || '<p style="text-align:center;color:#888;">এই সময়ের কোনো ফলাফল পাওয়া যায়নি।</p>';
             });
         });
     });
