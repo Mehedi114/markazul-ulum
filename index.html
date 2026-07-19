@@ -264,13 +264,36 @@ if ('serviceWorker' in navigator) {
                     <option value="7">ক্লাস ৭</option><option value="8">ক্লাস ৮</option>
                     <option value="9">ক্লাস ৯</option><option value="10">ক্লাস ১০</option>
                 </select>
-                <select id="topperExam" onchange="loadToppers()">
-                    <option value="">পরীক্ষা | Exam</option>
-                    <option value="monthly">মাসিক | Monthly</option>
-                    <option value="1st-semester">প্রথম সেমিস্টার</option>
-                    <option value="2nd-semester">দ্বিতীয় সেমিস্টার</option>
-                    <option value="yearly">বার্ষিক | Yearly</option>
-                </select>
+                <select id="topperExam" onchange="updateTopperFilters()">
+    <option value="">পরীক্ষা | Exam</option>
+    <option value="monthly">মাসিক | Monthly</option>
+    <option value="1st-semester">প্রথম সেমিস্টার</option>
+    <option value="2nd-semester">দ্বিতীয় সেমিস্টার</option>
+    <option value="yearly">বার্ষিক | Yearly</option>
+</select>
+<select id="topperMonth" onchange="loadToppers()" style="display:none;">
+    <option value="">মাস | Month</option>
+    <option value="জানুয়ারি">জানুয়ারি</option>
+    <option value="ফেব্রুয়ারি">ফেব্রুয়ারি</option>
+    <option value="মার্চ">মার্চ</option>
+    <option value="এপ্রিল">এপ্রিল</option>
+    <option value="মে">মে</option>
+    <option value="জুন">জুন</option>
+    <option value="জুলাই">জুলাই</option>
+    <option value="আগস্ট">আগস্ট</option>
+    <option value="সেপ্টেম্বর">সেপ্টেম্বর</option>
+    <option value="অক্টোবর">অক্টোবর</option>
+    <option value="নভেম্বর">নভেম্বর</option>
+    <option value="ডিসেম্বর">ডিসেম্বর</option>
+</select>
+<select id="topperYear" onchange="loadToppers()" style="display:none;">
+    <option value="">বছর | Year</option>
+    <option value="2024">২০২৪</option>
+    <option value="2025">২০২৫</option>
+    <option value="2026">২০২৬</option>
+    <option value="2027">২০২৭</option>
+    <option value="2028">২০২৮</option>
+</select>
             </div>
         </div>
         <div id="topperDisplay" class="topper-grid"></div>
