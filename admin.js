@@ -731,7 +731,6 @@ function loadAdminResults() {
     db.collection('results').where('class', '==', cls).where('exam', '==', exam).get().then(snap => {
         if (snap.empty) { div.innerHTML = '<p style="color:#888;">কোনো ফলাফল নেই</p>'; return; }
         
-        // Filter by month/year
         let filtered = [];
         snap.forEach(doc => {
             const r = doc.data();
@@ -742,7 +741,10 @@ function loadAdminResults() {
         
         if (filtered.length === 0) { div.innerHTML = '<p style="color:#888;">এই সময়ের কোনো ফলাফল নেই</p>'; return; }
         
-        let html = '<table class="data-table"><thead><tr><th>রোল</th><th>নাম</th><th>মাস</th><th>বছর</th><th>মোট</th><th>মুছুন</th></tr></thead><tbody>';
+        // Sort by roll
+        filtered.sort((a, b) => (parseInt(a.roll)||0) - (parseInt(b.roll)||0));
+        
+        let html = '<table class="data-table"><thead><tr><th>রোল</th><th>নাম</th><th>মাস</th><th>বছর</th><th>মোট</th><th>এডিট</th><th>মুছুন</th></tr></thead><tbody>';
         filtered.forEach(r => {
             let total = 0;
             for (let s in (r.subjects||{})) total += parseInt(r.subjects[s])||0;
@@ -751,11 +753,86 @@ function loadAdminResults() {
                 <td>${r.studentName||''}</td>
                 <td>${r.month||'-'}</td>
                 <td>${r.year||'-'}</td>
-                <td>${total}</td>
+                <td><strong>${total}</strong></td>
+                <td><button class="btn-edit" onclick="editResult('${r.id}')">✏️</button></td>
                 <td><button class="btn-delete" onclick="deleteDoc('results','${r.id}',loadAdminResults)">🗑️</button></td>
             </tr>`;
         });
         div.innerHTML = html + '</tbody></table>';
+    });
+}
+
+// ============================================
+// EDIT RESULT
+// ============================================
+function editResult(id) {
+    db.collection('results').doc(id).get().then(doc => {
+        if (!doc.exists) return;
+        const r = doc.data();
+        
+        // Load subjects list
+        db.collection('subjects').orderBy('order', 'asc').get().then(subSnap => {
+            const allSubjects = [];
+            subSnap.forEach(sd => allSubjects.push(sd.data().name));
+            
+            // Include subjects already in result (even if not in subjects list)
+            for (let s in (r.subjects || {})) {
+                if (!allSubjects.includes(s)) allSubjects.push(s);
+            }
+            
+            let subjectFields = '';
+            allSubjects.forEach(sub => {
+                const val = r.subjects && r.subjects[sub] !== undefined ? r.subjects[sub] : '';
+                subjectFields += `<div class="form-group">
+                    <label>${sub}</label>
+                    <input type="number" class="edit-res-sub" data-sub="${sub}" value="${val}" min="0" max="100">
+                </div>`;
+            });
+            
+            document.getElementById('editModalTitle').textContent = '✏️ ফলাফল এডিট করুন';
+            document.getElementById('editModalBody').innerHTML = `
+                <p style="background:#e8f5e9;padding:10px;border-radius:6px;margin-bottom:15px;">
+                    <strong>${r.studentName}</strong> | রোল: ${r.roll} | ক্লাস: ${r.class}<br>
+                    <small>${r.month || ''} ${r.year || ''} | পূর্ণ নম্বর: ${r.fullMark || 100}</small>
+                </p>
+                <h4 style="color:#1a5632;margin-bottom:10px;">📝 বিষয়ভিত্তিক নম্বর</h4>
+                <div class="form-row-3">${subjectFields}</div>
+                <button onclick="saveEditResult('${id}')" class="btn" style="margin-top:15px;">💾 আপডেট করুন</button>
+                <p id="editResMsg"></p>
+            `;
+            document.getElementById('editModal').style.display = 'flex';
+        });
+    });
+}
+
+function saveEditResult(id) {
+    const msg = document.getElementById('editResMsg');
+    const inputs = document.querySelectorAll('.edit-res-sub');
+    const subjects = {};
+    inputs.forEach(inp => {
+        if (inp.value !== '') subjects[inp.dataset.sub] = parseInt(inp.value);
+    });
+    
+    if (Object.keys(subjects).length === 0) {
+        msg.textContent = '❌ অন্তত একটি বিষয়ের নম্বর দিন!';
+        msg.style.color = '#c62828';
+        return;
+    }
+    
+    msg.textContent = '⏳ সেভ হচ্ছে...';
+    msg.style.color = '#888';
+    
+    db.collection('results').doc(id).update({
+        subjects,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(() => {
+        msg.textContent = '✅ আপডেট হয়েছে!';
+        msg.style.color = '#2e7d32';
+        loadAdminResults();
+        setTimeout(() => closeEditModal(), 1500);
+    }).catch(e => {
+        msg.textContent = '❌ সমস্যা!';
+        msg.style.color = '#c62828';
     });
 }
 // ============================================
