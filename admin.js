@@ -243,6 +243,16 @@ function loadSettingsForm() {
             setAbout3:'aboutText3',setStatClasses:'statClasses',setStatPassRate:'statPassRate',
             setFooterText:'footerText'};
         for (let id in map) { if (s[map[id]]) document.getElementById(id).value = s[map[id]]; }
+        
+        // Show existing logo & cover preview
+        if (s.logo) {
+            const logoPrev = document.getElementById('logoPreview');
+            if (logoPrev) { logoPrev.src = s.logo; logoPrev.style.display = 'block'; }
+        }
+        if (s.heroBg) {
+            const coverPrev = document.getElementById('coverPreview');
+            if (coverPrev) { coverPrev.src = s.heroBg; coverPrev.style.display = 'block'; }
+        }
     });
 }
 // ============================================
