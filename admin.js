@@ -245,7 +245,6 @@ function loadSettingsForm() {
         for (let id in map) { if (s[map[id]]) document.getElementById(id).value = s[map[id]]; }
     });
 }
-
 // ============================================
 // SHOWCASE
 // ============================================
