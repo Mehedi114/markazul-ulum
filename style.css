@@ -1307,3 +1307,96 @@ marquee { color: #bf360c; font-weight: 500; font-size: 15px; }
         font-size: 0.7em;
     }
 }
+
+/* ============================================
+   QUICK RESULT - COMPACT STUDENT LIST
+   ============================================ */
+.student-row-container {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    overflow: hidden;
+    transition: all 0.3s;
+}
+
+.student-row-container:hover {
+    border-color: #2d8a4e;
+    box-shadow: 0 2px 8px rgba(45,138,78,0.15);
+}
+
+.student-row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    cursor: pointer;
+    background: linear-gradient(90deg, #f9f9f9, white);
+    transition: background 0.3s;
+}
+
+.student-row-header:hover {
+    background: linear-gradient(90deg, #e8f5e9, #f9f9f9);
+}
+
+.student-row-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.student-row-roll {
+    background: #1a5632;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 13px;
+    min-width: 40px;
+    text-align: center;
+}
+
+.student-row-name {
+    font-weight: 600;
+    color: #1a5632;
+    font-size: 15px;
+}
+
+.student-row-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.student-row-preview {
+    font-size: 12px;
+    color: #666;
+}
+
+.preview-badge {
+    background: #fff8e1;
+    color: #856404;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 11px;
+    border: 1px solid #ffc107;
+}
+
+.student-row-arrow {
+    color: #2d8a4e;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.student-row-body {
+    border-top: 1px solid #e0e0e0;
+    background: #fafafa;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; max-height: 0; }
+    to { opacity: 1; max-height: 1000px; }
+}
