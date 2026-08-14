@@ -173,6 +173,29 @@ function showAdminPanel() {
 }
 
 // ============================================
+// QR FILTERS UPDATE
+// ============================================
+function updateQrFilters() {
+    const exam = document.getElementById('qrExamGlobal').value;
+    const monthGroup = document.getElementById('qrMonthGroup');
+    const yearGroup = document.getElementById('qrYearGroup');
+    
+    if (exam === 'monthly') {
+        monthGroup.style.display = 'block';
+        yearGroup.style.display = 'block';
+    } else {
+        monthGroup.style.display = 'none';
+        document.getElementById('qrMonth').value = '';
+        yearGroup.style.display = 'block';
+    }
+    
+    // Reload student list to update previews
+    if (document.getElementById('qrClass').value) {
+        loadQuickStudents();
+    }
+}
+
+// ============================================
 // UPDATE ADMIN RESULT FILTERS (Month/Year)
 // ============================================
 function updateAdminResultFilters() {
@@ -691,18 +714,24 @@ function loadStudentBoxContent(stuId, stuName, roll, photo) {
                 existingResults.push({ id: doc.id, ...doc.data() });
             });
             
-            // Show exam selector
-            let html = `
-                <div style="padding:15px;background:white;border-radius:8px;">
-                    <div style="margin-bottom:12px;padding:10px;background:#f0f7f0;border-radius:6px;">
-                        <label style="font-weight:600;color:#1a5632;margin-right:10px;">🎯 পরীক্ষা:</label>
-                        <select id="qrExam-${stuId}" onchange="loadPreviousMarks('${stuId}','${roll}')" style="padding:6px 10px;border:2px solid #2d8a4e;border-radius:5px;font-family:inherit;font-weight:600;">
-                            <option value="monthly">মাসিক</option>
-                            <option value="1st-semester">প্রথম সেমিস্টার</option>
-                            <option value="2nd-semester">দ্বিতীয় সেমিস্টার</option>
-                            <option value="yearly">বার্ষিক</option>
-                        </select>
-                    </div>`;
+           // Show current exam info (from global selector)
+const globalExam = document.getElementById('qrExamGlobal').value;
+const globalMonth = document.getElementById('qrMonth').value;
+const globalYear = document.getElementById('qrYear').value;
+const examLabel = {
+    'monthly': 'মাসিক',
+    '1st-semester': 'প্রথম সেমিস্টার',
+    '2nd-semester': 'দ্বিতীয় সেমিস্টার',
+    'yearly': 'বার্ষিক'
+}[globalExam];
+const period = [globalMonth, globalYear].filter(x => x).join(' ');
+
+let html = `
+    <div style="padding:15px;background:white;border-radius:8px;">
+        <div style="margin-bottom:12px;padding:10px;background:#e8f5e9;border-radius:6px;border-left:4px solid #2d8a4e;">
+            <strong style="color:#1a5632;">🎯 বর্তমান পরীক্ষা:</strong> ${examLabel} ${period ? '(' + period + ')' : ''}
+            <br><small style="color:#666;">উপরের ড্রপডাউন থেকে পরীক্ষা পরিবর্তন করুন</small>
+        </div>`;
             
             // Show existing marks summary
             if (existingResults.length > 0) {
@@ -745,7 +774,7 @@ function loadStudentBoxContent(stuId, stuName, roll, photo) {
 // Load previous marks when exam is selected
 function loadPreviousMarks(stuId, roll) {
     const cls = window.currentClass;
-    const exam = document.getElementById('qrExam-' + stuId).value;
+    const exam = document.getElementById('qrExamGlobal').value;
     const month = document.getElementById('qrMonth') ? document.getElementById('qrMonth').value : '';
     const year = document.getElementById('qrYear') ? document.getElementById('qrYear').value : '';
     
@@ -792,7 +821,7 @@ function loadPreviousMarks(stuId, roll) {
 
 function saveQuickResult(stuId, stuName, roll, photo) {
     const cls = window.currentClass;
-    const exam = document.getElementById('qrExam-' + stuId).value;
+    const exam = document.getElementById('qrExamGlobal').value;
     const fullMark = parseInt(document.getElementById('qrFullMark').value) || 100;
     const month = document.getElementById('qrMonth') ? document.getElementById('qrMonth').value : '';
     const year = document.getElementById('qrYear') ? document.getElementById('qrYear').value : '';
