@@ -561,7 +561,7 @@ function loadQuickStudents() {
     if (!cls) { div.innerHTML = ''; return; }
     div.innerHTML = '<p style="color:#888;padding:15px;">লোড হচ্ছে...</p>';
     
-    // First load subjects
+    // Load subjects first
     db.collection('subjects').orderBy('order', 'asc').get().then(subSnap => {
         const subjects = [];
         subSnap.forEach(doc => subjects.push(doc.data().name));
@@ -571,7 +571,7 @@ function loadQuickStudents() {
             return;
         }
         
-        // Then load students
+        // Load students
         db.collection('students').where('class', '==', cls).get().then(snap => {
             if (snap.empty) {
                 div.innerHTML = '<p style="color:#c62828;padding:15px;font-weight:600;">⚠️ এই ক্লাসে কোনো শিক্ষার্থী নেই।</p>';
@@ -586,45 +586,218 @@ function loadQuickStudents() {
             });
             students.sort((a, b) => (parseInt(a.roll)||0) - (parseInt(b.roll)||0));
             
-            let html = `<p style="color:#2e7d32;font-weight:600;padding:10px;background:#e8f5e9;border-radius:6px;margin-bottom:15px;">✅ মোট ${students.length} জন শিক্ষার্থী | ${subjects.length} টি বিষয়</p>`;
+            // Store subjects globally for later use
+            window.currentSubjects = subjects;
+            window.currentClass = cls;
+            
+            let html = `<p style="color:#2e7d32;font-weight:600;padding:10px;background:#e8f5e9;border-radius:6px;margin-bottom:15px;">
+                ✅ মোট ${students.length} জন শিক্ষার্থী | ${subjects.length} টি বিষয়<br>
+                <small style="font-weight:400;color:#555;">💡 শিক্ষার্থীর নামে ক্লিক করুন নম্বর দিতে</small>
+            </p>`;
             
             students.forEach(s => {
-                let subjectInputs = '';
-                subjects.forEach(sub => {
-                    subjectInputs += `<div class="form-group"><label>${sub}</label><input type="number" class="qr-sub" data-sub="${sub}" min="0" max="100"></div>`;
-                });
-                
                 html += `
-                <div class="quick-result-box" id="qr-${s.id}">
-                    <h4>📝 ${s.nameBn || s.name} | রোল: ${s.roll}</h4>
-                    <div style="margin:10px 0;padding:10px;background:white;border-radius:6px;">
+                <div class="student-row-container" id="src-${s.id}">
+                    <div class="student-row-header" onclick="toggleStudentBox('${s.id}','${(s.nameBn||s.name||'').replace(/'/g,"\\'")}','${s.roll}','${s.photo||''}')">
+                        <div class="student-row-left">
+                            <span class="student-row-roll">${s.roll}</span>
+                            <span class="student-row-name">${s.nameBn || s.name}</span>
+                        </div>
+                        <div class="student-row-right">
+                            <span id="preview-${s.id}" class="student-row-preview">লোড হচ্ছে...</span>
+                            <span class="student-row-arrow" id="arrow-${s.id}">▼</span>
+                        </div>
+                    </div>
+                    <div class="student-row-body" id="body-${s.id}" style="display:none;"></div>
+                </div>`;
+            });
+            
+            div.innerHTML = html;
+            
+            // Load preview for each student
+            students.forEach(s => loadStudentMarksPreview(s.id, s.roll));
+        });
+    });
+}
+
+// Load preview - show which subjects already have marks
+function loadStudentMarksPreview(stuId, roll) {
+    const cls = window.currentClass;
+    const previewEl = document.getElementById('preview-' + stuId);
+    if (!previewEl) return;
+    
+    // Get current exam context if any saved result exists
+    db.collection('results')
+        .where('class', '==', cls)
+        .where('roll', '==', roll)
+        .get().then(snap => {
+            if (snap.empty) {
+                previewEl.textContent = '';
+                return;
+            }
+            
+            // Show summary of latest result
+            let latestResult = null;
+            let latestTime = 0;
+            snap.forEach(doc => {
+                const r = doc.data();
+                const t = r.timestamp ? r.timestamp.seconds : 0;
+                if (t > latestTime) {
+                    latestTime = t;
+                    latestResult = r;
+                }
+            });
+            
+            if (latestResult && latestResult.subjects) {
+                const count = Object.keys(latestResult.subjects).length;
+                let total = 0;
+                for (let s in latestResult.subjects) total += parseInt(latestResult.subjects[s]) || 0;
+                previewEl.innerHTML = `<span class="preview-badge">📝 ${count} বিষয় | মোট: ${total}</span>`;
+            }
+        });
+}
+
+// Toggle student box (expand/collapse)
+function toggleStudentBox(stuId, stuName, roll, photo) {
+    const body = document.getElementById('body-' + stuId);
+    const arrow = document.getElementById('arrow-' + stuId);
+    
+    if (body.style.display === 'none') {
+        // Expand - load existing marks and show form
+        body.style.display = 'block';
+        arrow.textContent = '▲';
+        loadStudentBoxContent(stuId, stuName, roll, photo);
+    } else {
+        // Collapse
+        body.style.display = 'none';
+        arrow.textContent = '▼';
+    }
+}
+
+function loadStudentBoxContent(stuId, stuName, roll, photo) {
+    const body = document.getElementById('body-' + stuId);
+    const subjects = window.currentSubjects || [];
+    const cls = window.currentClass;
+    
+    body.innerHTML = '<p style="color:#888;padding:10px;">লোড হচ্ছে...</p>';
+    
+    // Load existing marks (all exam types for this student)
+    db.collection('results')
+        .where('class', '==', cls)
+        .where('roll', '==', roll)
+        .get().then(snap => {
+            const existingResults = [];
+            snap.forEach(doc => {
+                existingResults.push({ id: doc.id, ...doc.data() });
+            });
+            
+            // Show exam selector
+            let html = `
+                <div style="padding:15px;background:white;border-radius:8px;">
+                    <div style="margin-bottom:12px;padding:10px;background:#f0f7f0;border-radius:6px;">
                         <label style="font-weight:600;color:#1a5632;margin-right:10px;">🎯 পরীক্ষা:</label>
-                        <select id="qrExam-${s.id}" style="padding:8px 12px;border:2px solid #2d8a4e;border-radius:5px;font-family:inherit;font-weight:600;">
+                        <select id="qrExam-${stuId}" onchange="loadPreviousMarks('${stuId}','${roll}')" style="padding:6px 10px;border:2px solid #2d8a4e;border-radius:5px;font-family:inherit;font-weight:600;">
                             <option value="monthly">মাসিক</option>
                             <option value="1st-semester">প্রথম সেমিস্টার</option>
                             <option value="2nd-semester">দ্বিতীয় সেমিস্টার</option>
                             <option value="yearly">বার্ষিক</option>
                         </select>
-                    </div>
-                    <div class="form-row-3">${subjectInputs}</div>
-                    <button onclick="saveQuickResult('${s.id}','${(s.nameBn||s.name||'').replace(/'/g,"\\'")}','${s.roll}','${s.photo||''}')" class="btn btn-sm">💾 সেভ করুন</button>
-                    <span id="qrMsg-${s.id}" style="margin-left:10px;font-weight:600;"></span>
-                </div>`;
+                    </div>`;
+            
+            // Show existing marks summary
+            if (existingResults.length > 0) {
+                html += `<div id="existing-${stuId}" style="margin-bottom:12px;padding:10px;background:#fff8e1;border-radius:6px;border-left:4px solid #ffc107;">
+                    <strong style="color:#856404;">📊 আগের রেকর্ড:</strong><br>`;
+                existingResults.forEach(r => {
+                    const examName = {
+                        'monthly': 'মাসিক',
+                        '1st-semester': '১ম সেমিস্টার',
+                        '2nd-semester': '২য় সেমিস্টার',
+                        'yearly': 'বার্ষিক'
+                    }[r.exam] || r.exam;
+                    let total = 0;
+                    const subCount = Object.keys(r.subjects || {}).length;
+                    for (let s in (r.subjects || {})) total += parseInt(r.subjects[s]) || 0;
+                    const period = [r.month, r.year].filter(x => x).join(' ');
+                    html += `<small style="display:block;color:#666;margin-top:3px;">• ${examName} ${period ? '('+period+')' : ''}: ${subCount} বিষয়, মোট ${total}</small>`;
+                });
+                html += `</div>`;
+            }
+            
+            // Subject input boxes
+            html += `<div class="form-row-3" id="subjects-${stuId}">`;
+            subjects.forEach(sub => {
+                html += `<div class="form-group"><label>${sub}</label><input type="number" class="qr-sub-${stuId}" data-sub="${sub}" min="0" max="100" placeholder="নম্বর"></div>`;
             });
-            div.innerHTML = html;
+            html += `</div>`;
+            
+            html += `<button onclick="saveQuickResult('${stuId}','${(stuName||'').replace(/'/g,"\\'")}','${roll}','${photo||''}')" class="btn btn-sm" style="margin-top:10px;">💾 সেভ করুন</button>
+                <span id="qrMsg-${stuId}" style="margin-left:10px;font-weight:600;"></span>
+                </div>`;
+            
+            body.innerHTML = html;
+            
+            // Auto-load marks for default (monthly) exam
+            loadPreviousMarks(stuId, roll);
         });
-    });
+}
+
+// Load previous marks when exam is selected
+function loadPreviousMarks(stuId, roll) {
+    const cls = window.currentClass;
+    const exam = document.getElementById('qrExam-' + stuId).value;
+    const month = document.getElementById('qrMonth') ? document.getElementById('qrMonth').value : '';
+    const year = document.getElementById('qrYear') ? document.getElementById('qrYear').value : '';
+    
+    // Clear all inputs first
+    document.querySelectorAll('.qr-sub-' + stuId).forEach(inp => inp.value = '');
+    
+    // Find existing result for this exam+month+year
+    db.collection('results')
+        .where('class', '==', cls)
+        .where('exam', '==', exam)
+        .where('roll', '==', roll)
+        .get().then(snap => {
+            let existingResult = null;
+            snap.forEach(doc => {
+                const r = doc.data();
+                const monthMatch = (!month && !r.month) || r.month === month;
+                const yearMatch = (!year && !r.year) || r.year === year || r.year === parseInt(year).toString();
+                if (monthMatch && yearMatch) {
+                    existingResult = r;
+                }
+            });
+            
+            if (existingResult && existingResult.subjects) {
+                // Fill inputs with existing marks
+                document.querySelectorAll('.qr-sub-' + stuId).forEach(inp => {
+                    const sub = inp.dataset.sub;
+                    if (existingResult.subjects[sub] !== undefined) {
+                        inp.value = existingResult.subjects[sub];
+                        inp.style.background = '#fff8e1';
+                        inp.style.borderColor = '#ffc107';
+                    } else {
+                        inp.style.background = '';
+                        inp.style.borderColor = '';
+                    }
+                });
+            } else {
+                document.querySelectorAll('.qr-sub-' + stuId).forEach(inp => {
+                    inp.style.background = '';
+                    inp.style.borderColor = '';
+                });
+            }
+        });
 }
 
 function saveQuickResult(stuId, stuName, roll, photo) {
-    const cls = document.getElementById('qrClass').value;
+    const cls = window.currentClass;
     const exam = document.getElementById('qrExam-' + stuId).value;
     const fullMark = parseInt(document.getElementById('qrFullMark').value) || 100;
-    const month = document.getElementById('qrMonth').value;
-    const year = document.getElementById('qrYear').value;
+    const month = document.getElementById('qrMonth') ? document.getElementById('qrMonth').value : '';
+    const year = document.getElementById('qrYear') ? document.getElementById('qrYear').value : '';
     const msg = document.getElementById('qrMsg-' + stuId);
-    const box = document.getElementById('qr-' + stuId);
-    const inputs = box.querySelectorAll('.qr-sub');
+    const inputs = document.querySelectorAll('.qr-sub-' + stuId);
     const newSubjects = {};
     inputs.forEach(inp => {
         if (inp.value !== '') newSubjects[inp.dataset.sub] = parseInt(inp.value);
@@ -634,54 +807,50 @@ function saveQuickResult(stuId, stuName, roll, photo) {
     }
     msg.textContent = '⏳ সেভ হচ্ছে...'; msg.style.color = '#888';
     
-    // Check if result exists for this class + exam + roll + month + year
-    let query = db.collection('results')
+    db.collection('results')
         .where('class', '==', cls)
         .where('exam', '==', exam)
-        .where('roll', '==', roll);
-    
-    query.get().then(snap => {
-        // Filter by month/year in code (Firebase can't do 5 where clauses)
-        let existingDoc = null;
-        snap.forEach(doc => {
-            const r = doc.data();
-            const monthMatch = (!month && !r.month) || r.month === month;
-            const yearMatch = (!year && !r.year) || r.year === year || r.year === parseInt(year).toString();
-            if (monthMatch && yearMatch) {
-                existingDoc = doc;
-            }
-        });
-        
-        if (!existingDoc) {
-            // New result - create fresh
-            const data = { 
-                class: cls, exam, studentName: stuName, roll, 
-                subjects: newSubjects, fullMark, month, year, photo, 
-                timestamp: firebase.firestore.FieldValue.serverTimestamp() 
-            };
-            return db.collection('results').add(data);
-        } else {
-            // Merge existing subjects with new ones
-            const existingData = existingDoc.data();
-            const mergedSubjects = { ...(existingData.subjects || {}), ...newSubjects };
-            return db.collection('results').doc(existingDoc.id).update({
-                subjects: mergedSubjects,
-                studentName: stuName,
-                photo: photo || existingData.photo,
-                fullMark,
-                month, year,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        .where('roll', '==', roll)
+        .get().then(snap => {
+            let existingDoc = null;
+            snap.forEach(doc => {
+                const r = doc.data();
+                const monthMatch = (!month && !r.month) || r.month === month;
+                const yearMatch = (!year && !r.year) || r.year === year || r.year === parseInt(year).toString();
+                if (monthMatch && yearMatch) {
+                    existingDoc = doc;
+                }
             });
-        }
-    }).then(() => {
-        msg.textContent = '✅ সেভ হয়েছে!'; msg.style.color = '#2e7d32';
-        // Clear the inputs after save
-        inputs.forEach(inp => inp.value = '');
-        setTimeout(() => { msg.textContent = ''; }, 3000);
-    }).catch(e => {
-        console.error(e);
-        msg.textContent = '❌ সমস্যা!'; msg.style.color = '#c62828';
-    });
+            
+            if (!existingDoc) {
+                const data = { 
+                    class: cls, exam, studentName: stuName, roll, 
+                    subjects: newSubjects, fullMark, month, year, photo, 
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+                };
+                return db.collection('results').add(data);
+            } else {
+                const existingData = existingDoc.data();
+                const mergedSubjects = { ...(existingData.subjects || {}), ...newSubjects };
+                return db.collection('results').doc(existingDoc.id).update({
+                    subjects: mergedSubjects,
+                    studentName: stuName,
+                    photo: photo || existingData.photo,
+                    fullMark, month, year,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+        }).then(() => {
+            msg.textContent = '✅ সেভ হয়েছে!'; msg.style.color = '#2e7d32';
+            // Update preview
+            loadStudentMarksPreview(stuId, roll);
+            // Reload marks to show updated
+            loadPreviousMarks(stuId, roll);
+            setTimeout(() => { msg.textContent = ''; }, 3000);
+        }).catch(e => {
+            console.error(e);
+            msg.textContent = '❌ সমস্যা!'; msg.style.color = '#c62828';
+        });
 }
 // ============================================
 // FULL RESULT
