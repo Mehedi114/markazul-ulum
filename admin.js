@@ -1547,3 +1547,79 @@ function updateShowcaseFilters() {
         yearGroup.style.display = 'block';
     }
 }
+
+// ============================================
+// QUICK ADD STUDENT (from Quick Result page)
+// ============================================
+function showQuickAddStudent() {
+    const cls = document.getElementById('qrClass').value;
+    if (!cls) {
+        alert('আগে ক্লাস সিলেক্ট করুন!');
+        return;
+    }
+    document.getElementById('quickAddStudentBox').style.display = 'block';
+    document.getElementById('qasNameBn').focus();
+}
+
+function quickAddStudent() {
+    const msg = document.getElementById('qasMsg');
+    const cls = document.getElementById('qrClass').value;
+    const nameBn = document.getElementById('qasNameBn').value.trim();
+    const name = document.getElementById('qasName').value.trim();
+    const roll = document.getElementById('qasRoll').value.trim();
+    const father = document.getElementById('qasFather').value.trim();
+    
+    if (!nameBn && !name) {
+        msg.textContent = '❌ নাম দিন!';
+        msg.style.color = '#c62828';
+        return;
+    }
+    if (!roll) {
+        msg.textContent = '❌ রোল দিন!';
+        msg.style.color = '#c62828';
+        return;
+    }
+    
+    msg.textContent = '⏳ যাচাই হচ্ছে...';
+    msg.style.color = '#888';
+    
+    // Duplicate check
+    db.collection('students').where('class', '==', cls).get().then(snap => {
+        let isDuplicate = false;
+        snap.forEach(doc => {
+            const s = doc.data();
+            if (s.roll === roll) {
+                isDuplicate = true;
+                msg.textContent = `⚠️ রোল ${roll} ইতিমধ্যে আছে (${s.nameBn || s.name})!`;
+                msg.style.color = '#c62828';
+            }
+        });
+        
+        if (isDuplicate) return;
+        
+        // Add student
+        db.collection('students').add({
+            nameBn, name, class: cls, roll,
+            fatherName: father,
+            motherName: '', dob: '', phone: '', address: '', blood: '', photo: '',
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+            msg.textContent = '✅ শিক্ষার্থী যোগ হয়েছে!';
+            msg.style.color = '#2e7d32';
+            document.getElementById('qasNameBn').value = '';
+            document.getElementById('qasName').value = '';
+            document.getElementById('qasRoll').value = '';
+            document.getElementById('qasFather').value = '';
+            
+            // Reload student list
+            setTimeout(() => {
+                document.getElementById('quickAddStudentBox').style.display = 'none';
+                msg.textContent = '';
+                loadQuickStudents();
+            }, 1000);
+        }).catch(e => {
+            msg.textContent = '❌ সমস্যা!';
+            msg.style.color = '#c62828';
+        });
+    });
+}
