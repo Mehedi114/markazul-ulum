@@ -343,6 +343,33 @@
                 <option value="10">ক্লাস ১০</option>
             </select>
         </div>
+            <div style="margin:15px 0;display:flex;gap:10px;flex-wrap:wrap;">
+    <button onclick="showQuickAddStudent()" class="btn btn-sm" style="background:#1976d2;color:white;">➕ নতুন শিক্ষার্থী যোগ করুন</button>
+</div>
+<div id="quickAddStudentBox" style="display:none;background:#f0f7f0;padding:20px;border-radius:10px;margin-bottom:15px;border:2px dashed #2d8a4e;">
+    <h4 style="color:#1a5632;margin-bottom:12px;">➕ দ্রুত শিক্ষার্থী যোগ</h4>
+    <div class="form-row">
+        <div class="form-group">
+            <label>নাম (বাংলা)</label>
+            <input type="text" id="qasNameBn" placeholder="বাংলায় নাম">
+        </div>
+        <div class="form-group">
+            <label>Name (English)</label>
+            <input type="text" id="qasName" placeholder="English name">
+        </div>
+        <div class="form-group">
+            <label>রোল</label>
+            <input type="text" id="qasRoll" placeholder="রোল নম্বর">
+        </div>
+        <div class="form-group">
+            <label>পিতার নাম</label>
+            <input type="text" id="qasFather" placeholder="পিতার নাম">
+        </div>
+    </div>
+    <button onclick="quickAddStudent()" class="btn btn-sm">💾 যোগ করুন</button>
+    <button onclick="document.getElementById('quickAddStudentBox').style.display='none'" class="btn btn-sm" style="background:#999;color:white;margin-left:5px;">✕ বাতিল</button>
+    <p id="qasMsg" style="margin-top:8px;font-weight:600;"></p>
+</div>
         <div id="quickStudentList"></div>
     </div>
 </div>
