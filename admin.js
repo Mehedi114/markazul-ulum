@@ -15,6 +15,33 @@ const db = firebase.firestore();
 const auth = firebase.auth();
 
 // ============================================
+// SAFE QUERY - if a Firestore query fails (e.g. missing composite index),
+// fall back to fetching the collection and filtering in the browser
+// ============================================
+function safeQuery(col, query, filterFn) {
+    return query.get().catch(err => {
+        console.warn('Firestore query failed, using client-side filter:', err);
+        return db.collection(col).get().then(snap => {
+            const matched = [];
+            snap.forEach(doc => {
+                if (filterFn(doc.data())) matched.push(doc);
+            });
+            return {
+                empty: matched.length === 0,
+                forEach: cb => matched.forEach(cb)
+            };
+        });
+    });
+}
+
+// Show a visible error message instead of a silent blank list
+function showLoadError(elId, err) {
+    console.error('Load failed for ' + elId + ':', err);
+    const el = document.getElementById(elId);
+    if (el) el.innerHTML = '<p style="color:#c62828;font-weight:600;">❌ ডাটা লোড করা যায়নি! ইন্টারনেট সংযোগ চেক করে আবার চেষ্টা করুন।</p>';
+}
+
+// ============================================
 // IMGBB API KEY - PHOTO UPLOAD
 // ============================================
 const IMGBB_API_KEY = "b2ca23b16c7cdc5b0e3f3d0420ba606f";
@@ -343,7 +370,7 @@ function loadAdminNotices() {
             html += `<tr><td>${n.date||''}</td><td>${n.title||''}</td><td><button class="btn-delete" onclick="deleteDoc('notices','${doc.id}',loadAdminNotices)">🗑️</button></td></tr>`;
         });
         div.innerHTML = html + '</tbody></table>';
-    });
+    }).catch(e => showLoadError('adminNoticeList', e));
 }
 
 // ============================================
@@ -498,7 +525,7 @@ function loadAdminStudents() {
             </tr>`;
         });
         div.innerHTML = html + '</tbody></table>';
-    });
+    }).catch(e => showLoadError('adminStudentList', e));
 }
 
 function editStudent(id) {
@@ -650,10 +677,10 @@ function loadStudentMarksPreview(stuId, roll) {
     if (!previewEl) return;
     
     // Get current exam context if any saved result exists
-    db.collection('results')
+    safeQuery('results', db.collection('results')
         .where('class', '==', cls)
-        .where('roll', '==', roll)
-        .get().then(snap => {
+        .where('roll', '==', roll),
+        r => r.class === cls && r.roll === roll).then(snap => {
             if (snap.empty) {
                 previewEl.textContent = '';
                 return;
@@ -782,11 +809,11 @@ function loadPreviousMarks(stuId, roll) {
     document.querySelectorAll('.qr-sub-' + stuId).forEach(inp => inp.value = '');
     
     // Find existing result for this exam+month+year
-    db.collection('results')
+    safeQuery('results', db.collection('results')
         .where('class', '==', cls)
         .where('exam', '==', exam)
-        .where('roll', '==', roll)
-        .get().then(snap => {
+        .where('roll', '==', roll),
+        r => r.class === cls && r.exam === exam && r.roll === roll).then(snap => {
             let existingResult = null;
             snap.forEach(doc => {
                 const r = doc.data();
@@ -836,11 +863,11 @@ function saveQuickResult(stuId, stuName, roll, photo) {
     }
     msg.textContent = '⏳ সেভ হচ্ছে...'; msg.style.color = '#888';
     
-    db.collection('results')
+    safeQuery('results', db.collection('results')
         .where('class', '==', cls)
         .where('exam', '==', exam)
-        .where('roll', '==', roll)
-        .get().then(snap => {
+        .where('roll', '==', roll),
+        r => r.class === cls && r.exam === exam && r.roll === roll).then(snap => {
             let existingDoc = null;
             snap.forEach(doc => {
                 const r = doc.data();
@@ -901,13 +928,15 @@ function addResult() {
         if (val !== '') subjects[sub] = parseInt(val);
     }
     if (Object.keys(subjects).length === 0) { msg.textContent = 'নম্বর দিন!'; msg.className = 'msg-error'; return; }
+    const monthEl = document.getElementById('resMonth');
+    const yearEl = document.getElementById('resYear');
     const data = {
     class: document.getElementById('resClass').value,
     exam: document.getElementById('resExam').value,
     studentName, roll, subjects,
     fullMark: parseInt(document.getElementById('resFullMark').value) || 100,
-    month: document.getElementById('resMonth').value,
-    year: document.getElementById('resYear').value,
+    month: monthEl ? monthEl.value : '',
+    year: yearEl ? yearEl.value : '',
     photo: document.getElementById('resPhoto').value.trim(),
     timestamp: firebase.firestore.FieldValue.serverTimestamp()
 };
@@ -926,7 +955,8 @@ function loadAdminResults() {
     const div = document.getElementById('adminResultList');
     if (!cls || !exam) { div.innerHTML = '<p style="color:#888;">ক্লাস ও পরীক্ষা নির্বাচন করুন</p>'; return; }
     div.innerHTML = '<p style="color:#888;">লোড হচ্ছে...</p>';
-    db.collection('results').where('class', '==', cls).where('exam', '==', exam).get().then(snap => {
+    safeQuery('results', db.collection('results').where('class', '==', cls).where('exam', '==', exam),
+        r => r.class === cls && r.exam === exam).then(snap => {
         if (snap.empty) { div.innerHTML = '<p style="color:#888;">কোনো ফলাফল নেই</p>'; return; }
         
         let filtered = [];
@@ -957,7 +987,7 @@ function loadAdminResults() {
             </tr>`;
         });
         div.innerHTML = html + '</tbody></table>';
-    });
+    }).catch(e => showLoadError('adminResultList', e));
 }
 
 // ============================================
@@ -1076,7 +1106,7 @@ function loadAdminTeachers() {
             </tr>`;
         });
         div.innerHTML = html + '</tbody></table>';
-    });
+    }).catch(e => showLoadError('adminTeacherList', e));
 }
 
 function editTeacher(id) {
@@ -1166,7 +1196,7 @@ function loadAdminGallery() {
             </div>`;
         });
         div.innerHTML = html;
-    });
+    }).catch(e => showLoadError('adminGalleryList', e));
 }
 
 // ============================================
@@ -1187,7 +1217,7 @@ function loadAdminMessages() {
             </div>`;
         });
         div.innerHTML = html;
-    });
+    }).catch(e => showLoadError('adminMessageList', e));
 }
 
 // ============================================
@@ -1229,7 +1259,8 @@ function downloadResultSheet() {
         'yearly': 'বার্ষিক পরীক্ষা'
     };
     
-   db.collection('results').where('class', '==', cls).where('exam', '==', exam).get().then(snap => {
+   safeQuery('results', db.collection('results').where('class', '==', cls).where('exam', '==', exam),
+    r => r.class === cls && r.exam === exam).then(snap => {
     if (snap.empty) {
         alert('কোনো ফলাফল পাওয়া যায়নি!');
         return;
@@ -1484,7 +1515,7 @@ function loadSubjectList() {
             </tr>`;
         });
         div.innerHTML = html + '</tbody></table>';
-    });
+    }).catch(e => showLoadError('subjectList', e));
 }
 
 // Load subjects when admin panel opens
