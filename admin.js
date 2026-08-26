@@ -42,54 +42,6 @@ function showLoadError(elId, err) {
 }
 
 // ============================================
-// PER-CLASS SUBJECTS
-// Each class has its own subject list (classSubjects collection).
-// Adding a subject for a class makes it available for ALL students of that class.
-// ============================================
-const CLASS_OPTIONS = ['Play','Nursery','KG','1','2','3','4','5','6','7','8','9','10'];
-const DEFAULT_SUBJECTS = [
-    'বাংলা', 'ইংরেজি', 'গণিত', 'সাধারণ জ্ঞান',
-    'পরিবেশ পরিচিতি ও সমাজ', 'বিজ্ঞান', 'ইসলাম শিক্ষা',
-    'উর্দু শিক্ষা', 'আরবি শিক্ষা', 'তাজবীদ শিক্ষা',
-    'কালিমা মাসায়েল', 'হাদিস শরীফ', 'আসমাউল হুসনা',
-    'আদইয়ায়ে সালাত', 'আদইয়ায়ে মাসনুনা', 'কোরআন শরীফ',
-    'তাজবীদ ও মাখরাজ', 'হিফজুল কুরআন'
-];
-
-function loadClassSubjects(cls, cb) {
-    db.collection('classSubjects').doc(cls).get().then(doc => {
-        let arr = (doc.exists && Array.isArray(doc.data().subjects)) ? doc.data().subjects : [];
-        cb(arr);
-    }).catch(e => { console.error(e); cb([]); });
-}
-
-function addClassSubject(cls, name, cb) {
-    name = (name || '').trim();
-    if (!name) return;
-    const ref = db.collection('classSubjects').doc(cls);
-    ref.get().then(doc => {
-        let arr = (doc.exists && Array.isArray(doc.data().subjects)) ? doc.data().subjects.slice() : [];
-        if (arr.includes(name)) {
-            if (cb) cb('duplicate');
-            return null;
-        }
-        arr.push(name);
-        return ref.set({ subjects: arr, updatedAt: new Date().toISOString() }, { merge: true })
-            .then(() => { if (cb) cb('ok', arr); });
-    }).catch(e => { console.error(e); if (cb) cb('error'); });
-}
-
-function removeClassSubject(cls, name, cb) {
-    const ref = db.collection('classSubjects').doc(cls);
-    ref.get().then(doc => {
-        let arr = (doc.exists && Array.isArray(doc.data().subjects)) ? doc.data().subjects.slice() : [];
-        arr = arr.filter(s => s !== name);
-        return ref.set({ subjects: arr, updatedAt: new Date().toISOString() }, { merge: true })
-            .then(() => { if (cb) cb(arr); });
-    }).catch(e => { console.error(e); if (cb) cb(null); });
-}
-
-// ============================================
 // IMGBB API KEY - PHOTO UPLOAD
 // ============================================
 const IMGBB_API_KEY = "b2ca23b16c7cdc5b0e3f3d0420ba606f";
@@ -659,11 +611,15 @@ function loadQuickStudents() {
     if (!cls) { div.innerHTML = ''; return; }
     div.innerHTML = '<p style="color:#888;padding:15px;">লোড হচ্ছে...</p>';
     
-    // Load THIS CLASS's subjects first
-    loadClassSubjects(cls, subjects => {
-        // Store class subjects for the student boxes
-        window.currentClassSubjects = subjects;
-        window.currentClass = cls;
+    // Load subjects first
+    db.collection('subjects').orderBy('order', 'asc').get().then(subSnap => {
+        const subjects = [];
+        subSnap.forEach(doc => subjects.push(doc.data().name));
+        
+        if (subjects.length === 0) {
+            div.innerHTML = '<p style="color:#c62828;padding:15px;font-weight:600;">⚠️ কোনো বিষয় যোগ করা নেই। "📚 বিষয়সমূহ" tab থেকে বিষয় যোগ করুন।</p>';
+            return;
+        }
         
         // Load students
         db.collection('students').where('class', '==', cls).get().then(snap => {
@@ -680,18 +636,14 @@ function loadQuickStudents() {
             });
             students.sort((a, b) => (parseInt(a.roll)||0) - (parseInt(b.roll)||0));
             
-            let warnHtml = '';
-            if (subjects.length === 0) {
-                warnHtml = `<p style="color:#c62828;padding:10px;background:#ffebee;border-radius:6px;margin-bottom:15px;font-weight:600;">
-                    ⚠️ এই ক্লাসের জন্য এখনো কোনো subject যোগ করা নেই।
-                    <br><small style="font-weight:400;color:#555;">যেকোনো শিক্ষার্থীর নামে ক্লিক করে ভেতরের "Subject যোগ করুন" থেকে যোগ করুন — অথবা "📚 বিষয়সমূহ" tab থেকে এই ক্লাসের subject যোগ করুন।</small>
-                </p>`;
-            }
+            // Store subjects globally for later use
+            window.currentSubjects = subjects;
+            window.currentClass = cls;
             
             let html = `<p style="color:#2e7d32;font-weight:600;padding:10px;background:#e8f5e9;border-radius:6px;margin-bottom:15px;">
-                ✅ মোট ${students.length} জন শিক্ষার্থী | এই ক্লাসের ${subjects.length} টি subject<br>
+                ✅ মোট ${students.length} জন শিক্ষার্থী | ${subjects.length} টি বিষয়<br>
                 <small style="font-weight:400;color:#555;">💡 শিক্ষার্থীর নামে ক্লিক করুন নম্বর দিতে</small>
-            </p>` + warnHtml;
+            </p>`;
             
             students.forEach(s => {
                 html += `
@@ -774,18 +726,16 @@ function toggleStudentBox(stuId, stuName, roll, photo) {
 
 function loadStudentBoxContent(stuId, stuName, roll, photo) {
     const body = document.getElementById('body-' + stuId);
+    const subjects = window.currentSubjects || [];
     const cls = window.currentClass;
-    body.dataset.roll = roll;
-    body.dataset.stuName = stuName || '';
-    body.dataset.photo = photo || '';
     
     body.innerHTML = '<p style="color:#888;padding:10px;">লোড হচ্ছে...</p>';
     
     // Load existing marks (all exam types for this student)
-    safeQuery('results', db.collection('results')
+    db.collection('results')
         .where('class', '==', cls)
-        .where('roll', '==', roll),
-        r => r.class === cls && r.roll === roll).then(snap => {
+        .where('roll', '==', roll)
+        .get().then(snap => {
             const existingResults = [];
             snap.forEach(doc => {
                 existingResults.push({ id: doc.id, ...doc.data() });
@@ -830,19 +780,12 @@ let html = `
                 html += `</div>`;
             }
             
-            // Subject input boxes (THIS CLASS's subjects only)
-            html += `<div class="form-row-3" id="subjects-${stuId}"></div>`;
-            renderSubjectsForBox(stuId);
-            
-            // ➕ Add subject for this class (saves for ALL students of the class)
-            html += `<div style="margin-top:12px;padding:10px;background:#f0f7f0;border-radius:6px;border:1px dashed #2d8a4e;">
-                <strong style="color:#1a5632;">➕ এই ক্লাসে নতুন subject যোগ করুন</strong>
-                <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-                    <input type="text" id="newSub-${stuId}" placeholder="subject এর নাম লিখুন" style="flex:1;min-width:180px;padding:8px;border:2px solid #ddd;border-radius:6px;font-family:inherit;">
-                    <button onclick="quickAddSubject('${stuId}')" class="btn btn-sm">যোগ করুন</button>
-                </div>
-                <small style="color:#666;">নতুন subject এই ক্লাসের <strong>সব শিক্ষার্থী</strong> এর মধ্যে যুক্ত হয়ে যাবে।</small>
-            </div>`;
+            // Subject input boxes
+            html += `<div class="form-row-3" id="subjects-${stuId}">`;
+            subjects.forEach(sub => {
+                html += `<div class="form-group"><label>${sub}</label><input type="number" class="qr-sub-${stuId}" data-sub="${sub}" min="0" max="100" placeholder="নম্বর"></div>`;
+            });
+            html += `</div>`;
             
             html += `<button onclick="saveQuickResult('${stuId}','${(stuName||'').replace(/'/g,"\\'")}','${roll}','${photo||''}')" class="btn btn-sm" style="margin-top:10px;">💾 সেভ করুন</button>
                 <span id="qrMsg-${stuId}" style="margin-left:10px;font-weight:600;"></span>
@@ -853,45 +796,6 @@ let html = `
             // Auto-load marks for default (monthly) exam
             loadPreviousMarks(stuId, roll);
         });
-}
-
-// Render the subject input fields for one student's box (from class subjects)
-function renderSubjectsForBox(stuId) {
-    const box = document.getElementById('subjects-' + stuId);
-    if (!box) return;
-    const subjects = window.currentClassSubjects || [];
-    let html = '';
-    subjects.forEach(sub => {
-        html += `<div class="form-group"><label>${sub}</label><input type="number" class="qr-sub-${stuId}" data-sub="${sub}" min="0" max="100" placeholder="নম্বর"></div>`;
-    });
-    box.innerHTML = html || '<p style="color:#c62828;font-weight:600;">এই ক্লাসের জন্য কোনো subject নেই — নিচের বক্স থেকে যোগ করুন।</p>';
-}
-
-// Add a subject for the current class from inside a student box
-function quickAddSubject(stuId) {
-    const cls = window.currentClass;
-    const input = document.getElementById('newSub-' + stuId);
-    const msg = document.getElementById('qrMsg-' + stuId);
-    const name = (input ? input.value : '').trim();
-    if (!name) return;
-    if (msg) { msg.textContent = '⏳ যোগ হচ্ছে...'; msg.style.color = '#888'; }
-    addClassSubject(cls, name, (status, arr) => {
-        if (status === 'duplicate') {
-            if (msg) { msg.textContent = '⚠️ এই subject ইতিমধ্যে আছে!'; msg.style.color = '#c62828'; }
-            return;
-        }
-        if (status === 'error') {
-            if (msg) { msg.textContent = '❌ সমস্যা হয়েছে!'; msg.style.color = '#c62828'; }
-            return;
-        }
-        // Saved for the whole class — refresh current boxes
-        window.currentClassSubjects = arr;
-        renderSubjectsForBox(stuId);
-        const body = document.getElementById('body-' + stuId);
-        if (body) loadPreviousMarks(stuId, body.dataset.roll);
-        if (input) input.value = '';
-        if (msg) { msg.textContent = '✅ Subject যোগ হয়েছে! (এই ক্লাসের সব শিক্ষার্থীর জন্য)'; msg.style.color = '#2e7d32'; }
-    });
 }
 
 // Load previous marks when exam is selected
@@ -1094,11 +998,12 @@ function editResult(id) {
         if (!doc.exists) return;
         const r = doc.data();
         
-        // Load THIS CLASS's subjects list
-        loadClassSubjects(r.class || '', classSubjects => {
-            const allSubjects = classSubjects.slice();
+        // Load subjects list
+        db.collection('subjects').orderBy('order', 'asc').get().then(subSnap => {
+            const allSubjects = [];
+            subSnap.forEach(sd => allSubjects.push(sd.data().name));
             
-            // Include subjects already in result (even if not in class subjects list)
+            // Include subjects already in result (even if not in subjects list)
             for (let s in (r.subjects || {})) {
                 if (!allSubjects.includes(s)) allSubjects.push(s);
             }
@@ -1519,103 +1424,98 @@ function downloadResultSheet() {
 // ============================================
 function addSubject() {
     const msg = document.getElementById('subjectMsg');
-    const cls = document.getElementById('subjClass').value;
     const name = document.getElementById('newSubjectName').value.trim();
+    const order = parseInt(document.getElementById('newSubjectOrder').value) || 1;
     
-    if (!cls) { 
-        msg.textContent = '❌ আগে ক্লাস সিলেক্ট করুন!'; 
-        msg.style.color = '#c62828'; 
-        return; 
-    }
     if (!name) { 
         msg.textContent = '❌ বিষয়ের নাম দিন!'; 
         msg.style.color = '#c62828'; 
         return; 
     }
     
-    addClassSubject(cls, name, (status) => {
-        if (status === 'duplicate') {
-            msg.textContent = '⚠️ এই বিষয় ইতিমধ্যে এই ক্লাসে আছে!';
+    // Check duplicate
+    db.collection('subjects').where('name', '==', name).get().then(snap => {
+        if (!snap.empty) {
+            msg.textContent = '⚠️ এই বিষয় ইতিমধ্যে আছে!';
             msg.style.color = '#c62828';
             return;
         }
-        if (status === 'error') {
-            msg.textContent = '❌ সমস্যা হয়েছে!';
-            msg.style.color = '#c62828';
-            return;
-        }
-        msg.textContent = '✅ বিষয় যোগ হয়েছে! (এই ক্লাসের সব শিক্ষার্থীর জন্য)';
-        msg.style.color = '#2e7d32';
-        document.getElementById('newSubjectName').value = '';
-        loadSubjectList();
+        
+        db.collection('subjects').add({
+            name, order,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+            msg.textContent = '✅ বিষয় যোগ হয়েছে!';
+            msg.style.color = '#2e7d32';
+            document.getElementById('newSubjectName').value = '';
+            loadSubjectList();
+        });
     });
 }
 
 function addDefaultSubjects() {
+    const defaultSubjects = [
+        'বাংলা', 'ইংরেজি', 'গণিত', 'সাধারণ জ্ঞান',
+        'পরিবেশ পরিচিতি ও সমাজ', 'বিজ্ঞান', 'ইসলাম শিক্ষা',
+        'উর্দু শিক্ষা', 'আরবি শিক্ষা', 'তাজবীদ শিক্ষা',
+        'কালিমা মাসায়েল', 'হাদিস শরীফ', 'আসমাউল হুসনা',
+        'আদইয়ায়ে সালাত', 'আদইয়ায়ে মাসনুনা', 'কোরআন শরীফ',
+        'তাজবীদ ও মাখরাজ', 'হিফজুল কুরআন'
+    ];
+    
     const msg = document.getElementById('subjectMsg');
-    const cls = document.getElementById('subjClass').value;
-    if (!cls) {
-        msg.textContent = '❌ আগে ক্লাস সিলেক্ট করুন!';
-        msg.style.color = '#c62828';
-        return;
-    }
-    const classNames = {'Play':'প্লে','Nursery':'নার্সারি','KG':'কেজি','1':'ক্লাস ১','2':'ক্লাস ২','3':'ক্লাস ৩','4':'ক্লাস ৪','5':'ক্লাস ৫','6':'ক্লাস ৬','7':'ক্লাস ৭','8':'ক্লাস ৮','9':'ক্লাস ৯','10':'ক্লাস ১০'};
-    if (!confirm(`"${classNames[cls] || cls}" ক্লাসে সব ডিফল্ট বিষয় যোগ করবেন? (ইতিমধ্যে থাকলে এড়িয়ে যাবে)`)) return;
+    if (!confirm('সব ডিফল্ট বিষয় যোগ করবেন? (ইতিমধ্যে থাকলে এড়িয়ে যাবে)')) return;
     
     msg.textContent = '⏳ যোগ হচ্ছে...';
     msg.style.color = '#888';
     
-    loadClassSubjects(cls, existing => {
-        const missing = DEFAULT_SUBJECTS.filter(n => !existing.includes(n));
-        if (missing.length === 0) {
-            msg.textContent = '✅ সব ডিফল্ট বিষয় ইতিমধ্যে এই ক্লাসে আছে!';
-            msg.style.color = '#2e7d32';
-            return;
-        }
-        const ref = db.collection('classSubjects').doc(cls);
-        const merged = existing.concat(missing);
-        ref.set({ subjects: merged, updatedAt: new Date().toISOString() }, { merge: true }).then(() => {
-            msg.textContent = `✅ ${missing.length} টি নতুন বিষয় যোগ হয়েছে!`;
+    db.collection('subjects').get().then(snap => {
+        const existing = [];
+        snap.forEach(doc => existing.push(doc.data().name));
+        
+        let added = 0;
+        let promises = [];
+        
+        defaultSubjects.forEach((name, i) => {
+            if (!existing.includes(name)) {
+                promises.push(
+                    db.collection('subjects').add({
+                        name,
+                        order: i + 1,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    })
+                );
+                added++;
+            }
+        });
+        
+        Promise.all(promises).then(() => {
+            msg.textContent = `✅ ${added} টি নতুন বিষয় যোগ হয়েছে!`;
             msg.style.color = '#2e7d32';
             loadSubjectList();
-        }).catch(e => {
-            console.error(e);
-            msg.textContent = '❌ সমস্যা হয়েছে!';
-            msg.style.color = '#c62828';
         });
     });
-}
-
-function removeSubject(cls, name) {
-    if (!confirm(`"${name}" বিষয়টি মুছে ফেলবেন?`)) return;
-    removeClassSubject(cls, name, () => loadSubjectList());
 }
 
 function loadSubjectList() {
-    const cls = document.getElementById('subjClass').value;
-    const div = document.getElementById('subjectList');
-    if (!cls) { 
-        div.innerHTML = '<p style="color:#888;">উপরে ক্লাস সিলেক্ট করুন।</p>'; 
-        return; 
-    }
-    div.innerHTML = '<p style="color:#888;">লোড হচ্ছে...</p>';
-    loadClassSubjects(cls, subjects => {
-        if (subjects.length === 0) { 
-            div.innerHTML = '<p style="color:#888;">এই ক্লাসের জন্য এখনো কোনো বিষয় যোগ করা নেই। উপরের বাটন থেকে বিষয় যোগ করুন।</p>'; 
+    db.collection('subjects').orderBy('order', 'asc').get().then(snap => {
+        const div = document.getElementById('subjectList');
+        if (snap.empty) { 
+            div.innerHTML = '<p style="color:#888;">কোনো বিষয় নেই। উপরের বাটন থেকে "ডিফল্ট সব বিষয় যোগ করুন" ক্লিক করুন।</p>'; 
             return; 
         }
+        
         let html = '<table class="data-table"><thead><tr><th>ক্রম</th><th>বিষয়ের নাম</th><th>মুছুন</th></tr></thead><tbody>';
-        subjects.forEach((name, i) => {
-            const safe = String(name).replace(/'/g, "\\'");
+        snap.forEach(doc => {
+            const s = doc.data();
             html += `<tr>
-                <td>${i + 1}</td>
-                <td>${name}</td>
-                <td><button class="btn-delete" onclick="removeSubject('${cls}','${safe}')">🗑️</button></td>
+                <td>${s.order || ''}</td>
+                <td>${s.name}</td>
+                <td><button class="btn-delete" onclick="deleteDoc('subjects','${doc.id}',loadSubjectList)">🗑️</button></td>
             </tr>`;
         });
         div.innerHTML = html + '</tbody></table>';
-        div.innerHTML += '<p style="color:#666;font-size:12px;margin-top:8px;">💡 এই তালিকা "⚡ দ্রুত ফলাফল" tab এ এই ক্লাসের সব শিক্ষার্থীর কাছে যুক্ত হবে।</p>';
-    });
+    }).catch(e => showLoadError('subjectList', e));
 }
 
 // Load subjects when admin panel opens
