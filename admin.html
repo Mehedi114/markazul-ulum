@@ -243,27 +243,40 @@
         <div id="adminStudentList"></div>
     </div>
 </div>
-<!-- ★★★ SUBJECTS MANAGEMENT ★★★ -->
+<!-- ★★★ SUBJECTS MANAGEMENT (PER CLASS) ★★★ -->
 <div id="tabSubjects" class="tab-panel">
     <div class="admin-card">
         <h3><i class="fas fa-book"></i> বিষয় ব্যবস্থাপনা | Subject Management</h3>
-        <p style="color:#666;margin-bottom:15px;">এখানে যে বিষয়গুলো যোগ করবেন সেগুলো ফলাফল দেওয়ার সময় দেখাবে।</p>
-        <div class="form-row">
-            <div class="form-group">
-                <label>নতুন বিষয়ের নাম</label>
-                <input type="text" id="newSubjectName" placeholder="যেমন: পদার্থবিজ্ঞান">
-            </div>
-            <div class="form-group">
-                <label>ক্রম নম্বর (কোন সিরিয়ালে দেখাবে)</label>
-                <input type="number" id="newSubjectOrder" value="1" min="1">
-            </div>
+        <p style="color:#666;margin-bottom:15px;"><strong>প্রতিটি ক্লাসের জন্য আলাদা subject।</strong> যে ক্লাস সিলেক্ট করবেন, "⚡ দ্রুত ফলাফল" tab এ সেই ক্লাসের student গুলোর কাছে <strong>শুধু এই subject গুলোই</strong> দেখাবে।</p>
+        <div class="form-group">
+            <label>ক্লাস নির্বাচন করুন</label>
+            <select id="subjClass" onchange="loadSubjectList()" style="max-width:300px;padding:10px;border:2px solid #ddd;border-radius:6px;font-family:inherit;">
+                <option value="">-- ক্লাস সিলেক্ট করুন --</option>
+                <option value="Play">প্লে | Play</option>
+                <option value="Nursery">নার্সারি | Nursery</option>
+                <option value="KG">কেজি | KG</option>
+                <option value="1">ক্লাস ১</option>
+                <option value="2">ক্লাস ২</option>
+                <option value="3">ক্লাস ৩</option>
+                <option value="4">ক্লাস ৪</option>
+                <option value="5">ক্লাস ৫</option>
+                <option value="6">ক্লাস ৬</option>
+                <option value="7">ক্লাস ৭</option>
+                <option value="8">ক্লাস ৮</option>
+                <option value="9">ক্লাস ৯</option>
+                <option value="10">ক্লাস ১০</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>নতুন বিষয়ের নাম</label>
+            <input type="text" id="newSubjectName" placeholder="যেমন: পদার্থবিজ্ঞান">
         </div>
         <button onclick="addSubject()" class="btn">➕ বিষয় যোগ করুন</button>
-        <button onclick="addDefaultSubjects()" class="btn" style="background:#1976d2;color:white;margin-left:10px;">📋 ডিফল্ট সব বিষয় যোগ করুন</button>
+        <button onclick="addDefaultSubjects()" class="btn" style="background:#1976d2;color:white;margin-left:10px;">📋 এই ক্লাসে ডিফল্ট সব বিষয় যোগ করুন</button>
         <p id="subjectMsg"></p>
     </div>
     <div class="admin-card">
-        <h3><i class="fas fa-list"></i> সকল বিষয়ের তালিকা</h3>
+        <h3><i class="fas fa-list"></i> এই ক্লাসের বিষয় তালিকা</h3>
         <div id="subjectList"></div>
     </div>
 </div>
