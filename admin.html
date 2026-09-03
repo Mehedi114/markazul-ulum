@@ -207,9 +207,9 @@
             <div class="form-group"><label>পিতা</label><input type="text" id="stuFather"></div>
             <div class="form-group"><label>মাতা</label><input type="text" id="stuMother"></div>
         </div>
-        <div class="form-row">
+            <div class="form-row">
             <div class="form-group"><label>জন্ম তারিখ</label><input type="date" id="stuDOB"></div>
-            <div class="form-group"><label>ফোন</label><input type="text" id="stuPhone"></div>
+            <div class="form-group"><label>ফোন / অভিভাবকের নম্বর</label><input type="text" id="stuPhone" placeholder="এই নম্বরে result SMS যাবে"></div>
         </div>
         <div class="form-row">
             <div class="form-group"><label>ঠিকানা</label><input type="text" id="stuAddress"></div>
@@ -692,6 +692,42 @@
         <button class="edit-close" onclick="closeEditModal()">✕</button>
         <h3 id="editModalTitle">এডিট করুন</h3>
         <div id="editModalBody"></div>
+    </div>
+</div>
+
+<!-- RESULT SMS MODAL -->
+<div id="resultSmsModal" class="edit-modal" onclick="if(event.target===this) closeResultSmsModal()">
+    <div class="edit-modal-content sms-modal-content">
+        <button class="edit-close" onclick="closeResultSmsModal()">✕</button>
+        <h3>📩 ফলাফল মেসেজ পাঠান</h3>
+        <input type="hidden" id="smsResultId">
+        <div id="smsStudentMeta" class="sms-meta-box"></div>
+        <p class="sms-helper-text">শিক্ষার্থীর Phone field-এ অভিভাবকের নম্বর থাকলে এই button থেকে মোবাইলের SMS app open হবে।</p>
+        <div class="form-row">
+            <div class="form-group">
+                <label>অভিভাবকের ফোন নম্বর</label>
+                <input type="text" id="smsRecipientPhone" readonly>
+            </div>
+            <div class="form-group">
+                <label>মেসেজ ধরন</label>
+                <select id="smsTemplateType" onchange="updateResultSmsPreview()">
+                    <option value="full">ফলাফল পাঠান</option>
+                    <option value="grade">শুধু GPA / Grade</option>
+                    <option value="custom">কাস্টম মেসেজ</option>
+                </select>
+            </div>
+        </div>
+        <div id="smsPhoneWarning" class="sms-warning" style="display:none;"></div>
+        <div class="form-group">
+            <label>প্রস্তুত মেসেজ</label>
+            <textarea id="smsMessageText" rows="6" placeholder="এখানে মেসেজ auto লিখা থাকবে"></textarea>
+        </div>
+        <div class="qb-action-row">
+            <button onclick="openResultSmsApp()" class="btn btn-sm" style="background:#2e7d32;color:#fff;">📱 SMS App খুলুন</button>
+            <button onclick="copyResultSmsText()" class="btn btn-sm" style="background:#1976d2;color:#fff;">📋 কপি</button>
+            <button onclick="closeResultSmsModal()" class="btn btn-sm" style="background:#666;color:#fff;">✕ বন্ধ করুন</button>
+        </div>
+        <p id="smsActionMsg"></p>
     </div>
 </div>
 

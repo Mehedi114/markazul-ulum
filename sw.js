@@ -1,4 +1,4 @@
-const CACHE_NAME = 'markazul-ulum-v3';
+const CACHE_NAME = 'markazul-ulum-v4';
 const urlsToCache = [
     './',
     './index.html',

@@ -568,7 +568,7 @@ function editStudent(id) {
             </div>
             <div class="form-row">
                 <div class="form-group"><label>জন্ম তারিখ</label><input type="date" id="editStuDOB" value="${s.dob||''}"></div>
-                <div class="form-group"><label>ফোন</label><input type="text" id="editStuPhone" value="${s.phone||''}"></div>
+                <div class="form-group"><label>ফোন / অভিভাবকের নম্বর</label><input type="text" id="editStuPhone" value="${s.phone||''}" placeholder="এই নম্বরে result SMS যাবে"></div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>ঠিকানা</label><input type="text" id="editStuAddress" value="${s.address||''}"></div>
@@ -956,6 +956,148 @@ function addResult() {
     }).catch(e => { msg.textContent = '❌ সমস্যা!'; msg.className = 'msg-error'; });
 }
 
+let adminResultSmsCache = {};
+
+function normalizeDigitsToEnglish(value) {
+    return (value || '').toString().replace(/[০-৯]/g, d => '0123456789'['০১২৩৪৫৬৭৮৯'.indexOf(d)]);
+}
+
+function sanitizePhoneNumber(phone) {
+    return normalizeDigitsToEnglish(phone).replace(/[^\d+]/g, '');
+}
+
+function getAdminExamLabel(exam) {
+    return {
+        'monthly': 'মাসিক পরীক্ষা',
+        '1st-semester': 'প্রথম সেমিস্টার',
+        '2nd-semester': 'দ্বিতীয় সেমিস্টার',
+        'yearly': 'বার্ষিক পরীক্ষা'
+    }[exam] || exam || 'পরীক্ষা';
+}
+
+function getResultSummaryData(result) {
+    const subjects = result.subjects || {};
+    const fullMark = parseInt(result.fullMark) || 100;
+    let total = 0, count = 0;
+    for (let s in subjects) {
+        total += parseInt(subjects[s]) || 0;
+        count++;
+    }
+    const average = count ? total / count : 0;
+    const percent = fullMark ? (average / fullMark) * 100 : 0;
+    let gradeLetter = 'F', gpa = '0.00';
+    if (percent >= 80) { gradeLetter = 'A+'; gpa = '5.00'; }
+    else if (percent >= 70) { gradeLetter = 'A'; gpa = '4.00'; }
+    else if (percent >= 60) { gradeLetter = 'A-'; gpa = '3.50'; }
+    else if (percent >= 50) { gradeLetter = 'B'; gpa = '3.00'; }
+    else if (percent >= 40) { gradeLetter = 'C'; gpa = '2.00'; }
+    else if (percent >= 33) { gradeLetter = 'D'; gpa = '1.00'; }
+    return { total, count, average, percent, gradeLetter, gpa, fullMark };
+}
+
+function buildResultSmsText(result, mode = 'full') {
+    const schoolName = (document.getElementById('setNameBn')?.value || '').trim() || 'মারকাজুল উলুম ক্যাডেট স্কুল ও মাদ্রাসা';
+    const examBase = getAdminExamLabel(result.exam);
+    const period = [result.month, result.year].filter(Boolean).join(' ');
+    const examLabel = period ? `${examBase} (${period})` : examBase;
+    const summary = result.summary || getResultSummaryData(result);
+    const classText = result.class ? `শ্রেণি ${result.class}` : 'শ্রেণি';
+
+    if (mode === 'grade') {
+        return `${schoolName}: প্রিয় অভিভাবক, ${result.studentName || 'আপনার সন্তান'} ${examLabel}-এ ${classText}-এ GPA ${summary.gpa} (${summary.gradeLetter}) পেয়েছে। ধন্যবাদ।`;
+    }
+    if (mode === 'custom') {
+        return `${schoolName}: প্রিয় অভিভাবক, ${result.studentName || 'আপনার সন্তান'} এর বিষয়ে আপনার সঙ্গে যোগাযোগ প্রয়োজন।`;
+    }
+    return `${schoolName}: প্রিয় অভিভাবক, ${result.studentName || 'আপনার সন্তান'} ${examLabel}-এ ${classText}, রোল ${result.roll || '-'} থেকে মোট ${summary.total} নম্বর এবং GPA ${summary.gpa} (${summary.gradeLetter}) পেয়েছে। ধন্যবাদ।`;
+}
+
+function openResultSmsModal(resultId) {
+    const result = adminResultSmsCache[resultId];
+    if (!result) {
+        alert('ফলাফল ডাটা লোড হয়নি। আবার চেষ্টা করুন।');
+        return;
+    }
+    const modal = document.getElementById('resultSmsModal');
+    const phone = result.phone || '';
+    document.getElementById('smsResultId').value = resultId;
+    document.getElementById('smsRecipientPhone').value = phone;
+    document.getElementById('smsTemplateType').value = 'full';
+    document.getElementById('smsStudentMeta').innerHTML = `
+        <strong>${result.studentName || 'শিক্ষার্থী'}</strong> | রোল: ${result.roll || '-'} | ক্লাস: ${result.class || '-'}<br>
+        <small>${getAdminExamLabel(result.exam)} ${[result.month, result.year].filter(Boolean).join(' ')} | মোট: ${result.summary.total} | GPA: ${result.summary.gpa} (${result.summary.gradeLetter})</small>`;
+    const warn = document.getElementById('smsPhoneWarning');
+    if (!phone) {
+        warn.style.display = 'block';
+        warn.textContent = '⚠️ এই শিক্ষার্থীর Phone field-এ কোনো নম্বর নেই। আগে শিক্ষার্থী তথ্য থেকে ফোন/অভিভাবকের নম্বর দিন।';
+    } else {
+        warn.style.display = 'none';
+        warn.textContent = '';
+    }
+    document.getElementById('smsActionMsg').textContent = '';
+    updateResultSmsPreview();
+    modal.style.display = 'flex';
+}
+
+function closeResultSmsModal() {
+    const modal = document.getElementById('resultSmsModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function updateResultSmsPreview() {
+    const resultId = document.getElementById('smsResultId')?.value;
+    const type = document.getElementById('smsTemplateType')?.value || 'full';
+    const textarea = document.getElementById('smsMessageText');
+    if (!resultId || !textarea || !adminResultSmsCache[resultId]) return;
+    textarea.value = buildResultSmsText(adminResultSmsCache[resultId], type);
+}
+
+function copyResultSmsText() {
+    const text = document.getElementById('smsMessageText')?.value || '';
+    const msg = document.getElementById('smsActionMsg');
+    if (!text) {
+        msg.textContent = '❌ কপি করার মতো মেসেজ নেই।';
+        msg.className = 'msg-error';
+        return;
+    }
+    const onSuccess = () => {
+        msg.textContent = '✅ মেসেজ কপি হয়েছে!';
+        msg.className = 'msg-success';
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(onSuccess).catch(() => {
+            const ta = document.getElementById('smsMessageText');
+            ta.select();
+            document.execCommand('copy');
+            onSuccess();
+        });
+    } else {
+        const ta = document.getElementById('smsMessageText');
+        ta.select();
+        document.execCommand('copy');
+        onSuccess();
+    }
+}
+
+function openResultSmsApp() {
+    const phone = sanitizePhoneNumber(document.getElementById('smsRecipientPhone')?.value || '');
+    const text = document.getElementById('smsMessageText')?.value || '';
+    const msg = document.getElementById('smsActionMsg');
+    if (!phone) {
+        msg.textContent = '❌ আগে শিক্ষার্থীর Phone field-এ অভিভাবকের নম্বর দিন।';
+        msg.className = 'msg-error';
+        return;
+    }
+    if (!text.trim()) {
+        msg.textContent = '❌ মেসেজ ফাঁকা আছে।';
+        msg.className = 'msg-error';
+        return;
+    }
+    msg.textContent = '📱 SMS app খোলার চেষ্টা হচ্ছে...';
+    msg.className = 'msg-success';
+    window.location.href = `sms:${phone}?body=${encodeURIComponent(text)}`;
+}
+
 function loadAdminResults() {
     const cls = document.getElementById('viewResClass').value;
     const exam = document.getElementById('viewResExam').value;
@@ -964,34 +1106,47 @@ function loadAdminResults() {
     const div = document.getElementById('adminResultList');
     if (!cls || !exam) { div.innerHTML = '<p style="color:#888;">ক্লাস ও পরীক্ষা নির্বাচন করুন</p>'; return; }
     div.innerHTML = '<p style="color:#888;">লোড হচ্ছে...</p>';
-    safeQuery('results', db.collection('results').where('class', '==', cls).where('exam', '==', exam),
-        r => r.class === cls && r.exam === exam).then(snap => {
+    adminResultSmsCache = {};
+
+    db.collection('students').where('class', '==', cls).get().then(stuSnap => {
+        const studentMap = {};
+        stuSnap.forEach(doc => {
+            const s = doc.data();
+            studentMap[normalizeDigitsToEnglish(s.roll)] = s;
+        });
+        return safeQuery('results', db.collection('results').where('class', '==', cls).where('exam', '==', exam),
+            r => r.class === cls && r.exam === exam).then(snap => ({ snap, studentMap }));
+    }).then(({ snap, studentMap }) => {
         if (snap.empty) { div.innerHTML = '<p style="color:#888;">কোনো ফলাফল নেই</p>'; return; }
-        
+
         let filtered = [];
         snap.forEach(doc => {
             const r = doc.data();
             if (month && r.month !== month) return;
             if (year && r.year !== year && r.year !== parseInt(year).toString()) return;
-            filtered.push({ id: doc.id, ...r });
+            const student = studentMap[normalizeDigitsToEnglish(r.roll)] || {};
+            const phone = (student.phone || r.phone || '').trim();
+            const summary = getResultSummaryData(r);
+            filtered.push({ id: doc.id, ...r, phone, summary });
         });
-        
+
         if (filtered.length === 0) { div.innerHTML = '<p style="color:#888;">এই সময়ের কোনো ফলাফল নেই</p>'; return; }
-        
-        // Sort by roll
-        filtered.sort((a, b) => (parseInt(a.roll)||0) - (parseInt(b.roll)||0));
-        
-        let html = '<table class="data-table"><thead><tr><th>রোল</th><th>নাম</th><th>মাস</th><th>বছর</th><th>মোট</th><th>এডিট</th><th>মুছুন</th></tr></thead><tbody>';
+
+        filtered.sort((a, b) => (parseInt(normalizeDigitsToEnglish(a.roll))||0) - (parseInt(normalizeDigitsToEnglish(b.roll))||0));
+
+        let html = '<table class="data-table"><thead><tr><th>রোল</th><th>নাম</th><th>মাস</th><th>বছর</th><th>মোট</th><th>এডিট</th><th>মেসেজ</th><th>মুছুন</th></tr></thead><tbody>';
         filtered.forEach(r => {
-            let total = 0;
-            for (let s in (r.subjects||{})) total += parseInt(r.subjects[s])||0;
+            adminResultSmsCache[r.id] = r;
+            const btnClass = r.phone ? 'btn-message' : 'btn-message btn-message-missing';
+            const title = r.phone ? 'অভিভাবককে SMS পাঠান' : 'ফোন নম্বর নেই';
             html += `<tr>
                 <td>${r.roll||''}</td>
-                <td>${r.studentName||''}</td>
+                <td>${r.studentName||''}<br><small style="color:#666;">${r.phone || 'ফোন নেই'}</small></td>
                 <td>${r.month||'-'}</td>
                 <td>${r.year||'-'}</td>
-                <td><strong>${total}</strong></td>
+                <td><strong>${r.summary.total}</strong></td>
                 <td><button class="btn-edit" onclick="editResult('${r.id}')">✏️</button></td>
+                <td><button class="${btnClass}" title="${title}" onclick="openResultSmsModal('${r.id}')">📩</button></td>
                 <td><button class="btn-delete" onclick="deleteDoc('results','${r.id}',loadAdminResults)">🗑️</button></td>
             </tr>`;
         });
