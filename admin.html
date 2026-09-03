@@ -45,6 +45,7 @@
         <button onclick="showTab('tabResult',this)">📝 ফলাফল</button>
         <button onclick="showTab('tabTeacher',this)">👨‍🏫 শিক্ষক</button>
         <button onclick="showTab('tabGallery',this)">🖼️ গ্যালারি</button>
+        <button onclick="showTab('tabQuestionBuilder',this)">🧾 প্রশ্ন নির্মাতা</button>
         <button onclick="showTab('tabMessages',this)">💬 মেসেজ</button>
     </div>
 
@@ -540,6 +541,140 @@
             </div>
         </div>
 
+        <!-- QUESTION BUILDER -->
+        <div id="tabQuestionBuilder" class="tab-panel">
+            <div class="admin-card qb-hero-card">
+                <div class="qb-hero-top">
+                    <div>
+                        <h3><i class="fas fa-file-signature"></i> প্রশ্ন নির্মাতা | Question Builder</h3>
+                        <p class="qb-helper-text">এটা এখন আরও সহজ করা হয়েছে — আগে setup দিন, তারপর যে column-এ লিখতে চান সেখানে click করে Word-এর মতো লিখুন।</p>
+                    </div>
+                    <div id="qbActiveStatus" class="qb-live-badge">✍️ আগে বাম/ডান কোনো লেখার জায়গায় click করুন</div>
+                </div>
+                <div class="qb-step-grid">
+                    <div class="qb-step-card"><strong>ধাপ ১</strong><span>উপরে header info দিন</span></div>
+                    <div class="qb-step-card"><strong>ধাপ ২</strong><span>বাম বা ডান column select করে লিখুন</span></div>
+                    <div class="qb-step-card"><strong>ধাপ ৩</strong><span>tool button দিয়ে formatting / math symbol দিন</span></div>
+                    <div class="qb-step-card"><strong>ধাপ ৪</strong><span>Print / PDF দিয়ে final question paper নিন</span></div>
+                </div>
+            </div>
+
+            <div class="admin-card">
+                <h3><i class="fas fa-sliders-h"></i> ১) Header Setup</h3>
+                <input type="hidden" id="qbCurrentDraftId">
+                <div class="form-row">
+                    <div class="form-group"><label>প্রতিষ্ঠানের নাম</label><input type="text" id="qbInstitution" placeholder="প্রতিষ্ঠানের নাম"></div>
+                    <div class="form-group"><label>পরীক্ষার নাম</label><input type="text" id="qbExamTitle" placeholder="যেমন: মাসিক মূল্যায়ন পরীক্ষা-২০২৬"></div>
+                    <div class="form-group"><label>শ্রেণি</label><input type="text" id="qbClassName" placeholder="যেমন: প্রথম"></div>
+                    <div class="form-group"><label>বাম পাশের বিষয়</label><input type="text" id="qbLeftSubject" placeholder="যেমন: বাংলা"></div>
+                    <div class="form-group"><label>ডান পাশের বিষয়</label><input type="text" id="qbRightSubject" placeholder="যেমন: সাধারণ জ্ঞান"></div>
+                    <div class="form-group"><label>সময়</label><input type="text" id="qbDuration" placeholder="যেমন: ১.০০ ঘণ্টা"></div>
+                    <div class="form-group"><label>পূর্ণমান</label><input type="text" id="qbTotalMarks" placeholder="যেমন: ৫০"></div>
+                </div>
+                <div class="form-group">
+                    <label>নির্দেশনা / অতিরিক্ত লাইন</label>
+                    <textarea id="qbInstructions" rows="2" placeholder="যেমন: সব প্রশ্নের উত্তর দাও / সুন্দর হাতের লেখা নম্বর আছে"></textarea>
+                </div>
+                <div class="qb-setup-bottom">
+                    <label class="qb-checkbox-row"><input type="checkbox" id="qbAutoSync" checked> <span>Header auto sync চালু রাখুন</span></label>
+                    <div class="qb-quick-focus">
+                        <button onclick="focusQuestionBuilderSide('left')" class="btn btn-sm">⬅️ বাম column-এ লিখুন</button>
+                        <button onclick="focusQuestionBuilderSide('right')" class="btn btn-sm" style="background:#1976d2;color:#fff;">➡️ ডান column-এ লিখুন</button>
+                        <button onclick="addQuestionBuilderPage()" class="btn btn-sm" style="background:#2e7d32;color:#fff;">➕ নতুন পেজ</button>
+                    </div>
+                </div>
+                <div class="qb-template-row">
+                    <button type="button" class="qb-tool-btn" onclick="insertQuestionSnippet('qnum')">সাধারণ প্রশ্ন</button>
+                    <button type="button" class="qb-tool-btn" onclick="insertQuestionSnippet('mcq')">MCQ ব্লক</button>
+                    <button type="button" class="qb-tool-btn" onclick="insertQuestionSnippet('writtenBlock')">লিখিত প্রশ্ন ব্লক</button>
+                    <button type="button" class="qb-tool-btn" onclick="insertQuestionSnippet('math')">Math প্রশ্ন লাইন</button>
+                    <button type="button" class="qb-tool-btn" onclick="insertQuestionSnippet('passage')">অনুচ্ছেদ ব্লক</button>
+                </div>
+                <div class="qb-action-row">
+                    <button onclick="applyQuestionBuilderHeaderToAll()" class="btn btn-sm">🧩 সব header update</button>
+                    <button onclick="saveQuestionBuilderDraft()" class="btn btn-sm" style="background:#6a1b9a;color:#fff;">💾 Draft Save</button>
+                    <button onclick="printQuestionBuilder()" class="btn btn-sm" style="background:#00897b;color:#fff;">🖨️ Print / PDF</button>
+                    <button onclick="newQuestionBuilderDraft()" class="btn btn-sm" style="background:#ef6c00;color:#fff;">🆕 নতুন Draft</button>
+                </div>
+                <p id="qbMsg"></p>
+            </div>
+
+            <div class="admin-card qb-toolbar-card">
+                <div class="qb-toolbar-head">
+                    <div>
+                        <h3><i class="fas fa-pen-ruler"></i> ২) টুলস ও Math Kit</h3>
+                        <p class="qb-helper-text" style="margin:0;">যে জায়গায় cursor থাকবে, tool সেখানেই কাজ করবে।</p>
+                    </div>
+                </div>
+                <div class="qb-tool-group">
+                    <span class="qb-tool-title">Formatting</span>
+                    <div class="qb-toolbar">
+                        <button type="button" class="qb-tool-btn" onclick="execQuestionCommand('bold')"><b>B</b></button>
+                        <button type="button" class="qb-tool-btn" onclick="execQuestionCommand('italic')"><i>I</i></button>
+                        <button type="button" class="qb-tool-btn" onclick="execQuestionCommand('underline')"><u>U</u></button>
+                        <button type="button" class="qb-tool-btn" onclick="execQuestionCommand('justifyLeft')">⬅</button>
+                        <button type="button" class="qb-tool-btn" onclick="execQuestionCommand('justifyCenter')">↔</button>
+                        <button type="button" class="qb-tool-btn" onclick="execQuestionCommand('justifyRight')">➡</button>
+                        <button type="button" class="qb-tool-btn" onclick="execQuestionCommand('insertOrderedList')">1.</button>
+                        <button type="button" class="qb-tool-btn" onclick="execQuestionCommand('insertUnorderedList')">•</button>
+                        <button type="button" class="qb-tool-btn" onclick="execQuestionCommand('superscript')">x²</button>
+                        <button type="button" class="qb-tool-btn" onclick="execQuestionCommand('subscript')">x₂</button>
+                        <button type="button" class="qb-tool-btn" onclick="execQuestionCommand('undo')">↶</button>
+                        <button type="button" class="qb-tool-btn" onclick="execQuestionCommand('redo')">↷</button>
+                    </div>
+                </div>
+                <div class="qb-tool-group">
+                    <span class="qb-tool-title">Question Blocks</span>
+                    <div class="qb-toolbar">
+                        <button type="button" class="qb-tool-btn" onclick="insertQuestionSnippet('qnum')">১। প্রশ্ন</button>
+                        <button type="button" class="qb-tool-btn" onclick="insertQuestionSnippet('subparts')">ক-খ-গ-ঘ</button>
+                        <button type="button" class="qb-tool-btn" onclick="insertQuestionSnippet('mcq')">☑ MCQ</button>
+                        <button type="button" class="qb-tool-btn" onclick="insertQuestionSnippet('marks')">[৫]</button>
+                        <button type="button" class="qb-tool-btn" onclick="insertQuestionSnippet('answer')">উত্তর লাইন</button>
+                        <button type="button" class="qb-tool-btn" onclick="insertQuestionSnippet('dotted')">ডটেড লাইন</button>
+                        <button type="button" class="qb-tool-btn" onclick="insertQuestionSnippet('table2')">▦ Table</button>
+                    </div>
+                </div>
+                <div class="qb-tool-group">
+                    <span class="qb-tool-title">Math Symbols</span>
+                    <div class="qb-toolbar">
+                        <button type="button" class="qb-tool-btn" onclick="insertQuestionSnippet('fraction')">½ ভগ্নাংশ</button>
+                        <button type="button" class="qb-tool-btn" onclick="insertQuestionSnippet('root')">√ root</button>
+                        <button type="button" class="qb-tool-btn" onclick="insertQuestionSnippet('power')">x²</button>
+                        <button type="button" class="qb-tool-btn" onclick="insertQuestionSnippet('subscript')">x₁</button>
+                        <button type="button" class="qb-tool-btn" onclick="insertQuestionSnippet('math')">∑ Math line</button>
+                    </div>
+                </div>
+                <div id="qbSymbolGrid" class="qb-symbol-grid"></div>
+            </div>
+
+            <div class="admin-card">
+                <details class="qb-draft-box">
+                    <summary>৩) Save করা Draft দেখুন / খুলুন</summary>
+                    <div class="qb-builder-topline" style="margin-top:12px;">
+                        <p class="qb-helper-text" style="margin:0;">একটা paper save করে পরে আবার edit করতে পারবেন।</p>
+                        <button onclick="loadQuestionBuilderDrafts()" class="btn btn-sm">🔄 তালিকা রিফ্রেশ</button>
+                    </div>
+                    <div id="qbDraftList"></div>
+                </details>
+            </div>
+
+            <div class="admin-card">
+                <div class="qb-builder-topline">
+                    <div>
+                        <h3 style="margin-bottom:6px;"><i class="fas fa-columns"></i> ৪) লেখার জায়গা</h3>
+                        <p class="qb-helper-text" style="margin:0;">যে column পূর্ণ হবে, সেখান থেকে next column বা next page-এ continue করুন।</p>
+                    </div>
+                    <div class="qb-page-actions">
+                        <button onclick="focusQuestionBuilderSide('left')" class="btn btn-sm">বাম Column</button>
+                        <button onclick="focusQuestionBuilderSide('right')" class="btn btn-sm">ডান Column</button>
+                        <button onclick="addQuestionBuilderPage()" class="btn btn-sm">নতুন Page</button>
+                    </div>
+                </div>
+                <div id="qbPages" class="qb-pages"></div>
+            </div>
+        </div>
+
         <!-- MESSAGES -->
         <div id="tabMessages" class="tab-panel">
             <div class="admin-card">
@@ -559,6 +694,7 @@
         <div id="editModalBody"></div>
     </div>
 </div>
+
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>

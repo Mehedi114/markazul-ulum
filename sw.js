@@ -1,4 +1,4 @@
-const CACHE_NAME = 'markazul-ulum-v2';
+const CACHE_NAME = 'markazul-ulum-v3';
 const urlsToCache = [
     './',
     './index.html',
@@ -39,10 +39,17 @@ self.addEventListener('activate', event => {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', event => {
+    const url = event.request.url;
+
     // Skip Firebase requests (need online)
-    if (event.request.url.includes('firestore.googleapis.com') || 
-        event.request.url.includes('firebaseapp.com') ||
-        event.request.url.includes('googleapis.com/identitytoolkit')) {
+    if (url.includes('firestore.googleapis.com') || 
+        url.includes('firebaseapp.com') ||
+        url.includes('googleapis.com/identitytoolkit')) {
+        return;
+    }
+
+    // Never cache admin panel files so latest changes appear immediately
+    if (url.includes('/admin.html') || url.includes('/admin.js')) {
         return;
     }
     
