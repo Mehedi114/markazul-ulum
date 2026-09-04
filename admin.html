@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body class="admin-body">
 
@@ -482,6 +483,23 @@
     <button onclick="loadAdminResults()" class="btn btn-sm">দেখুন</button>
     <button onclick="downloadResultSheet()" class="btn btn-sm" style="background:#1976d2;color:white;margin-left:5px;">📥 PDF ডাউনলোড</button>
 </div>
+<div class="form-group" style="flex-basis:100%;display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:#f4f8f5;border:1px solid #d6e6db;border-radius:8px;padding:10px;">
+    <strong style="font-size:13px;color:#1a5632;">🖨️ প্রিন্ট সেটিং:</strong>
+    <label style="font-size:13px;font-weight:600;">📄 কাগজের সাইজ</label>
+    <select id="sheetSizeMain" style="padding:8px;border:2px solid #ddd;border-radius:6px;font-family:inherit;font-size:13px;">
+        <option value="a4" selected>A4 (২১০×২৯৭ মি.মি.)</option>
+        <option value="a3">A3 (২৯৭×৪২০ মি.মি.)</option>
+        <option value="legal">Legal (২১৬×৩৫৬)</option>
+        <option value="letter">Letter (২১৬×২৭৯)</option>
+        <option value="a5">A5 (১৪৮×২১০ মি.মি.)</option>
+    </select>
+    <label style="font-size:13px;font-weight:600;">🧭 দিক</label>
+    <select id="sheetOrientMain" style="padding:8px;border:2px solid #ddd;border-radius:6px;font-family:inherit;font-size:13px;">
+        <option value="landscape" selected>ল্যান্ডস্কেপ (আড়াআড়ি)</option>
+        <option value="portrait">পোর্ট্রেট (লম্বালম্বি)</option>
+    </select>
+    <small style="color:#666;">দোকানে A4 প্রিন্টের জন্য <b>A4 + ল্যান্ডস্কেপ</b> রাখুন। ডাউনলোড উইন্ডোতেও বদলানো যাবে।</small>
+</div>
                 </div>
                 <div id="adminResultList"></div>
             </div>
@@ -736,7 +754,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="admin.js"></script>
+<script src="admin.js?v=5"></script>
 
 </body>
 </html>

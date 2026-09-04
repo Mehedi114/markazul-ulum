@@ -34,6 +34,12 @@ function safeQuery(col, query, filterFn) {
     });
 }
 
+// Compare two stored/selected values safely (number vs string, extra space etc.)
+function sameFieldValue(a, b) {
+    const norm = v => (v === undefined || v === null) ? '' : String(v).trim();
+    return norm(a) === norm(b);
+}
+
 // Show a visible error message instead of a silent blank list
 function showLoadError(elId, err) {
     console.error('Load failed for ' + elId + ':', err);
@@ -826,8 +832,8 @@ function loadPreviousMarks(stuId, roll) {
             let existingResult = null;
             snap.forEach(doc => {
                 const r = doc.data();
-                const monthMatch = (!month && !r.month) || r.month === month;
-                const yearMatch = (!year && !r.year) || r.year === year || r.year === parseInt(year).toString();
+                const monthMatch = (!month && !r.month) || sameFieldValue(r.month, month);
+                const yearMatch = (!year && !r.year) || sameFieldValue(r.year, year);
                 if (monthMatch && yearMatch) {
                     existingResult = r;
                 }
@@ -880,8 +886,8 @@ function saveQuickResult(stuId, stuName, roll, photo) {
             let existingDoc = null;
             snap.forEach(doc => {
                 const r = doc.data();
-                const monthMatch = (!month && !r.month) || r.month === month;
-                const yearMatch = (!year && !r.year) || r.year === year || r.year === parseInt(year).toString();
+                const monthMatch = (!month && !r.month) || sameFieldValue(r.month, month);
+                const yearMatch = (!year && !r.year) || sameFieldValue(r.year, year);
                 if (monthMatch && yearMatch) {
                     existingDoc = doc;
                 }
@@ -985,7 +991,7 @@ function getResultSummaryData(result) {
     }
     const average = count ? total / count : 0;
     const percent = fullMark ? (average / fullMark) * 100 : 0;
-    let gradeLetter = 'F', gpa = '0.00';
+    let gradeLetter = 'D', gpa = '1.00'; // সর্বনিম্ন গ্রেড D — F/ফেল দেখানো হয় না
     if (percent >= 80) { gradeLetter = 'A+'; gpa = '5.00'; }
     else if (percent >= 70) { gradeLetter = 'A'; gpa = '4.00'; }
     else if (percent >= 60) { gradeLetter = 'A-'; gpa = '3.50'; }
@@ -1122,8 +1128,8 @@ function loadAdminResults() {
         let filtered = [];
         snap.forEach(doc => {
             const r = doc.data();
-            if (month && r.month !== month) return;
-            if (year && r.year !== year && r.year !== parseInt(year).toString()) return;
+            if (month && !sameFieldValue(r.month, month)) return;
+            if (year && !sameFieldValue(r.year, year)) return;
             const student = studentMap[normalizeDigitsToEnglish(r.roll)] || {};
             const phone = (student.phone || r.phone || '').trim();
             const summary = getResultSummaryData(r);
@@ -1431,8 +1437,7 @@ function downloadResultSheet() {
         { range: '60-69', grade: 'A-', gpa: '3.50' },
         { range: '50-59', grade: 'B', gpa: '3.00' },
         { range: '40-49', grade: 'C', gpa: '2.00' },
-        { range: '33-39', grade: 'D', gpa: '1.00' },
-        { range: '00-32', grade: 'F', gpa: '0.00' }
+        { range: '00-39', grade: 'D', gpa: '1.00' }
     ];
     
     const getOverallGrade = (average, fullMark) => {
@@ -1442,8 +1447,8 @@ function downloadResultSheet() {
         if (percent >= 60) return { grade: 'A-', gpa: '3.50' };
         if (percent >= 50) return { grade: 'B', gpa: '3.00' };
         if (percent >= 40) return { grade: 'C', gpa: '2.00' };
-        if (percent >= 33) return { grade: 'D', gpa: '1.00' };
-        return { grade: 'F', gpa: '0.00' };
+        // সর্বনিম্ন গ্রেড D — কাউকে ফেল (F) দেখানো হয় না
+        return { grade: 'D', gpa: '1.00' };
     };
     
     const siteNameBn = (document.getElementById('setNameBn')?.value || '').trim() || 'মারকাজুল উলুম ক্যাডেট স্কুল ও মাদ্রাসা';
@@ -1464,8 +1469,8 @@ function downloadResultSheet() {
         
         snap.forEach(doc => {
             const r = doc.data();
-            if (filterMonth && r.month !== filterMonth) return;
-            if (filterYear && r.year !== filterYear && r.year !== parseInt(filterYear).toString()) return;
+            if (filterMonth && !sameFieldValue(r.month, filterMonth)) return;
+            if (filterYear && !sameFieldValue(r.year, filterYear)) return;
             
             if (r.fullMark) fullMark = parseInt(r.fullMark) || 100;
             let total = 0;
@@ -1492,9 +1497,9 @@ function downloadResultSheet() {
             r.gpa = gradeInfo.gpa;
         });
         
-        const passCount = results.filter(r => r.gradeLetter !== 'F').length;
-        const failCount = results.length - passCount;
-        const passRate = results.length ? ((passCount / results.length) * 100).toFixed(2) : '0.00';
+        // কাউকে ফেল দেখানো হয় না — সবাই পাশ, পাসের হার ১০০%
+        const passCount = results.length;
+        const passRate = results.length ? '100.00' : '0.00';
         
         let title = `ক্লাস ${classNames[cls] || cls} - ${examNames[exam] || exam}`;
         if (month && year) title += ` (${month} ${year})`;
@@ -1645,7 +1650,7 @@ function downloadResultSheet() {
     }
     .meta-grid {
         display: grid;
-        grid-template-columns: repeat(7, minmax(0, 1fr));
+        grid-template-columns: repeat(6, minmax(0, 1fr));
         gap: 10px;
         margin-bottom: 14px;
     }
@@ -1811,7 +1816,6 @@ function downloadResultSheet() {
     <div class="meta-grid">
         <div class="meta-card"><span class="label">মোট পরীক্ষার্থী</span><span class="value">${results.length}</span></div>
         <div class="meta-card"><span class="label">মোট পাশ</span><span class="value">${passCount}</span></div>
-        <div class="meta-card"><span class="label">মোট ফেল</span><span class="value">${failCount}</span></div>
         <div class="meta-card"><span class="label">পাসের হার</span><span class="value">${passRate}%</span></div>
         <div class="meta-card"><span class="label">বিষয়ের সংখ্যা</span><span class="value">${subjectList.length}</span></div>
         <div class="meta-card"><span class="label">পূর্ণ নম্বর</span><span class="value">${fullMark}</span></div>
@@ -1859,18 +1863,232 @@ function downloadResultSheet() {
 </body>
 </html>`;
         
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) {
-            alert('Popup block হয়েছে। Live preview-তে এটা নাও কাজ করতে পারে, কিন্তু push করার পর normal hosting-এ কাজ করবে।');
-            return;
-        }
-        printWindow.document.open();
-        printWindow.document.write(htmlContent);
-        printWindow.document.close();
-        printWindow.focus();
+        const fileNameBase = `Result-${classNames[cls] || cls}-${examNames[exam] || exam}${month ? '-' + month : ''}${year ? '-' + year : ''}`.replace(/\s+/g, '_');
+        openResultSheetPreview(htmlContent, fileNameBase);
     }).catch(err => {
         console.error(err);
-        alert('সমস্যা হয়েছে!');
+        alert('সমস্যা হয়েছে! ' + (err && err.message ? err.message : ''));
+    });
+}
+
+// ============================================
+// RESULT SHEET PREVIEW + PDF DOWNLOAD
+// (popup window ব্যবহার করা হয় না, তাই popup blocker/mobile-এও কাজ করে)
+// ============================================
+let resultSheetFileName = 'Result-Sheet';
+
+// কাগজের সাইজ (mm, portrait হিসেবে width x height)
+const RESULT_PAPER_SIZES = {
+    a4:     { label: 'A4 (২১০×২৯৭ মি.মি.)',   w: 210,   h: 297 },
+    a3:     { label: 'A3 (২৯৭×৪২০ মি.মি.)',   w: 297,   h: 420 },
+    legal:  { label: 'Legal (২১৬×৩৫৬)',        w: 215.9, h: 355.6 },
+    letter: { label: 'Letter (২১৬×২৭৯)',       w: 215.9, h: 279.4 },
+    a5:     { label: 'A5 (১৪৮×২১০ মি.মি.)',   w: 148,   h: 210 }
+};
+
+function getResultSheetPageSetup() {
+    const sizeKey = (document.getElementById('resultSheetSize')?.value)
+        || (document.getElementById('sheetSizeMain')?.value) || 'a4';
+    const orientation = (document.getElementById('resultSheetOrient')?.value)
+        || (document.getElementById('sheetOrientMain')?.value) || 'landscape';
+    const paper = RESULT_PAPER_SIZES[sizeKey] || RESULT_PAPER_SIZES.a4;
+    const pageW = orientation === 'portrait' ? paper.w : paper.h;
+    const pageH = orientation === 'portrait' ? paper.h : paper.w;
+    return { sizeKey, orientation, pageW, pageH, label: paper.label };
+}
+
+// iframe-এর ভিতরের @page rule + প্রিভিউ প্রস্থ সিলেক্ট করা সাইজ অনুযায়ী বদলে দেয়
+function applyResultSheetPageSetup() {
+    const frame = document.getElementById('resultSheetFrame');
+    if (!frame || !frame.contentWindow) return;
+    const setup = getResultSheetPageSetup();
+    const doc = frame.contentWindow.document;
+
+    let styleEl = doc.getElementById('rsPageStyle');
+    if (!styleEl) {
+        styleEl = doc.createElement('style');
+        styleEl.id = 'rsPageStyle';
+        doc.head.appendChild(styleEl);
+    }
+    styleEl.textContent = `@page { size: ${setup.sizeKey.toUpperCase()} ${setup.orientation}; margin: 8mm; }`;
+
+    // প্রিভিউ যেন প্রিন্টের অনুপাতের কাছাকাছি দেখায়
+    const previewWidth = setup.orientation === 'portrait' ? 980 : 1240;
+    frame.style.width = previewWidth + 'px';
+    frame.dataset.captureWidth = previewWidth;
+
+    try { localStorage.setItem('rsPaper', setup.sizeKey + '|' + setup.orientation); } catch (e) {}
+
+    // ফলাফল ট্যাবের সিলেক্টগুলোর সঙ্গে মিলিয়ে রাখো
+    const mainSize = document.getElementById('sheetSizeMain');
+    const mainOrient = document.getElementById('sheetOrientMain');
+    if (mainSize) mainSize.value = setup.sizeKey;
+    if (mainOrient) mainOrient.value = setup.orientation;
+
+    setResultSheetStatus(`কাগজ: ${setup.label} — ${setup.orientation === 'portrait' ? 'পোর্ট্রেট' : 'ল্যান্ডস্কেপ'}`);
+}
+
+function openResultSheetPreview(htmlContent, fileNameBase) {
+    resultSheetFileName = fileNameBase || 'Result-Sheet';
+    closeResultSheetPreview();
+
+    let savedSize = 'a4', savedOrient = 'landscape';
+    try {
+        const saved = (localStorage.getItem('rsPaper') || '').split('|');
+        if (RESULT_PAPER_SIZES[saved[0]]) savedSize = saved[0];
+        if (saved[1] === 'portrait' || saved[1] === 'landscape') savedOrient = saved[1];
+    } catch (e) {}
+    // ফলাফল ট্যাবে সিলেক্ট করা মান সবসময় অগ্রাধিকার পাবে
+    const mainSizeVal = document.getElementById('sheetSizeMain')?.value;
+    const mainOrientVal = document.getElementById('sheetOrientMain')?.value;
+    if (RESULT_PAPER_SIZES[mainSizeVal]) savedSize = mainSizeVal;
+    if (mainOrientVal === 'portrait' || mainOrientVal === 'landscape') savedOrient = mainOrientVal;
+    const sizeOptions = Object.keys(RESULT_PAPER_SIZES).map(k =>
+        `<option value="${k}"${k === savedSize ? ' selected' : ''}>${RESULT_PAPER_SIZES[k].label}</option>`).join('');
+
+    const overlay = document.createElement('div');
+    overlay.id = 'resultSheetOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.75);display:flex;flex-direction:column;padding:10px;';
+
+    overlay.innerHTML = `
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px;background:#fff;border-radius:10px;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+                <label style="font-size:13px;font-weight:700;color:#333;">📄 কাগজ</label>
+                <select id="resultSheetSize" onchange="applyResultSheetPageSetup()" style="padding:8px;border:2px solid #ddd;border-radius:6px;font-family:inherit;font-size:13px;">${sizeOptions}</select>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+                <label style="font-size:13px;font-weight:700;color:#333;">🧭 দিক</label>
+                <select id="resultSheetOrient" onchange="applyResultSheetPageSetup()" style="padding:8px;border:2px solid #ddd;border-radius:6px;font-family:inherit;font-size:13px;">
+                    <option value="landscape"${savedOrient === 'landscape' ? ' selected' : ''}>ল্যান্ডস্কেপ (আড়াআড়ি)</option>
+                    <option value="portrait"${savedOrient === 'portrait' ? ' selected' : ''}>পোর্ট্রেট (লম্বালম্বি)</option>
+                </select>
+            </div>
+            <button type="button" onclick="downloadResultSheetPdf()" style="background:#1976d2;color:#fff;border:none;padding:10px 16px;border-radius:6px;font-family:inherit;font-weight:700;cursor:pointer;">📥 PDF ডাউনলোড</button>
+            <button type="button" onclick="printResultSheetPreview()" style="background:#1a5632;color:#fff;border:none;padding:10px 16px;border-radius:6px;font-family:inherit;font-weight:700;cursor:pointer;">🖨️ প্রিন্ট</button>
+            <button type="button" onclick="downloadResultSheetHtml()" style="background:#00897b;color:#fff;border:none;padding:10px 16px;border-radius:6px;font-family:inherit;font-weight:700;cursor:pointer;">🌐 HTML</button>
+            <button type="button" onclick="closeResultSheetPreview()" style="background:#c62828;color:#fff;border:none;padding:10px 16px;border-radius:6px;font-family:inherit;font-weight:700;cursor:pointer;">✕ বন্ধ</button>
+            <span id="resultSheetStatus" style="flex:1 1 100%;font-weight:700;color:#1a5632;font-size:13px;">ফলাফল শিট প্রস্তুত ✅ — দোকানে A4 প্রিন্টের জন্য <b>A4 + ল্যান্ডস্কেপ</b> রাখুন (বিষয় বেশি হলে সব কলাম সুন্দরভাবে আঁটে)।</span>
+        </div>
+        <div style="flex:1;overflow:auto;background:#fff;border-radius:10px;padding:6px;">
+            <iframe id="resultSheetFrame" style="width:1240px;max-width:none;height:100%;min-height:520px;border:0;background:#fff;"></iframe>
+        </div>`;
+
+    document.body.appendChild(overlay);
+
+    const frame = document.getElementById('resultSheetFrame');
+    const doc = frame.contentWindow.document;
+    doc.open();
+    doc.write(htmlContent);
+    doc.close();
+
+    // store for HTML fallback download
+    overlay.dataset.ready = '1';
+    overlay._html = htmlContent;
+
+    // সিলেক্ট করা কাগজ/দিক প্রিভিউ ও প্রিন্টে প্রয়োগ করো
+    setTimeout(applyResultSheetPageSetup, 60);
+}
+
+function closeResultSheetPreview() {
+    const old = document.getElementById('resultSheetOverlay');
+    if (old) old.remove();
+}
+
+function setResultSheetStatus(text, color) {
+    const el = document.getElementById('resultSheetStatus');
+    if (el) {
+        el.textContent = text;
+        el.style.color = color || '#1a5632';
+    }
+}
+
+function printResultSheetPreview() {
+    const frame = document.getElementById('resultSheetFrame');
+    if (!frame) return;
+    try {
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+    } catch (e) {
+        console.error(e);
+        alert('প্রিন্ট করা যায়নি। "PDF ডাউনলোড" বাটন ব্যবহার করুন।');
+    }
+}
+
+function downloadResultSheetHtml() {
+    const overlay = document.getElementById('resultSheetOverlay');
+    if (!overlay || !overlay._html) return;
+    const blob = new Blob([overlay._html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = resultSheetFileName + '.html';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    setResultSheetStatus('HTML ফাইল ডাউনলোড হয়েছে ✅');
+}
+
+function downloadResultSheetPdf() {
+    const frame = document.getElementById('resultSheetFrame');
+    if (!frame) return;
+
+    const jsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    if (typeof html2canvas === 'undefined' || !jsPDFCtor) {
+        alert('PDF লাইব্রেরি লোড হয়নি (ইন্টারনেট সমস্যা)। "প্রিন্ট" বাটন দিয়ে Save as PDF করুন।');
+        return;
+    }
+
+    setResultSheetStatus('⏳ PDF তৈরি হচ্ছে, একটু অপেক্ষা করুন...', '#1976d2');
+
+    const setup = getResultSheetPageSetup();
+    const captureWidth = parseInt(frame.dataset.captureWidth) || (setup.orientation === 'portrait' ? 980 : 1240);
+    const doc = frame.contentWindow.document;
+    const fontsReady = (doc.fonts && doc.fonts.ready) ? doc.fonts.ready : Promise.resolve();
+
+    fontsReady.then(() => new Promise(res => setTimeout(res, 350))).then(() => {
+        const body = doc.body;
+        return html2canvas(body, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            allowTaint: false,
+            logging: false,
+            windowWidth: captureWidth,
+            width: Math.max(body.scrollWidth, captureWidth),
+            height: body.scrollHeight
+        });
+    }).then(canvas => {
+        const pdf = new jsPDFCtor({ orientation: setup.orientation, unit: 'mm', format: setup.sizeKey });
+        const pageW = setup.pageW, pageH = setup.pageH, margin = 6;
+        const usableW = pageW - margin * 2;
+        const usableH = pageH - margin * 2;
+        const pxPerMm = canvas.width / usableW;
+        const pageHpx = Math.floor(usableH * pxPerMm);
+
+        let y = 0, first = true;
+        while (y < canvas.height) {
+            const sliceH = Math.min(pageHpx, canvas.height - y);
+            const slice = document.createElement('canvas');
+            slice.width = canvas.width;
+            slice.height = sliceH;
+            const ctx = slice.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, slice.width, slice.height);
+            ctx.drawImage(canvas, 0, y, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+            const imgData = slice.toDataURL('image/jpeg', 0.92);
+            if (!first) pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', margin, margin, usableW, sliceH / pxPerMm);
+            first = false;
+            y += sliceH;
+        }
+
+        pdf.save(`${resultSheetFileName}-${setup.sizeKey.toUpperCase()}-${setup.orientation === 'portrait' ? 'Portrait' : 'Landscape'}.pdf`);
+        setResultSheetStatus(`PDF ডাউনলোড হয়েছে ✅ (${setup.sizeKey.toUpperCase()} ${setup.orientation === 'portrait' ? 'পোর্ট্রেট' : 'ল্যান্ডস্কেপ'})`);
+    }).catch(err => {
+        console.error('PDF তৈরি ব্যর্থ:', err);
+        setResultSheetStatus('❌ PDF তৈরি করা যায়নি — "প্রিন্ট" দিয়ে Save as PDF করুন', '#c62828');
+        alert('PDF তৈরি করা যায়নি। "🖨️ প্রিন্ট" বাটন থেকে "Save as PDF" নির্বাচন করুন।');
     });
 }
 

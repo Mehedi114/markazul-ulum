@@ -243,7 +243,8 @@ function getGrade(m, fullMark) {
     if (percent >= 50) return { g: 'B', c: 'grade-b' };
     if (percent >= 40) return { g: 'C', c: 'grade-c' };
     if (percent >= 33) return { g: 'D', c: 'grade-c' };
-    return { g: 'F', c: 'grade-f' };
+    // সর্বনিম্ন গ্রেড D — কাউকে ফেল (F) দেখানো হয় না
+    return { g: 'D', c: 'grade-c' };
 }
 
 function searchResults() {
@@ -292,7 +293,7 @@ db.collection('results')
             const avg = count > 0 ? (total / count).toFixed(1) : 0;
 const fullM = r.fullMark || 100;
 const avgPercent = (avg / fullM) * 100;
-const gpa = avgPercent >= 80 ? '5.00' : avgPercent >= 70 ? '4.00' : avgPercent >= 60 ? '3.50' : avgPercent >= 50 ? '3.00' : avgPercent >= 40 ? '2.00' : avgPercent >= 33 ? '1.00' : '0.00';
+const gpa = avgPercent >= 80 ? '5.00' : avgPercent >= 70 ? '4.00' : avgPercent >= 60 ? '3.50' : avgPercent >= 50 ? '3.00' : avgPercent >= 40 ? '2.00' : avgPercent >= 33 ? '1.00' : '1.00';
             div.innerHTML = `
                 <div class="result-card">
                     <div class="result-header">
