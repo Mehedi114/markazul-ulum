@@ -991,7 +991,7 @@ function getResultSummaryData(result) {
     }
     const average = count ? total / count : 0;
     const percent = fullMark ? (average / fullMark) * 100 : 0;
-    let gradeLetter = '', gpa = ''; // 33%-এর নিচে হলে F/ফেল নয় — গ্রেড ফাঁকা, শুধু নম্বর
+    let gradeLetter = 'D', gpa = '1.00'; // সর্বনিম্ন গ্রেড D — F/ফেল দেখানো হয় না
     if (percent >= 80) { gradeLetter = 'A+'; gpa = '5.00'; }
     else if (percent >= 70) { gradeLetter = 'A'; gpa = '4.00'; }
     else if (percent >= 60) { gradeLetter = 'A-'; gpa = '3.50'; }
@@ -1010,12 +1010,12 @@ function buildResultSmsText(result, mode = 'full') {
     const classText = result.class ? `শ্রেণি ${result.class}` : 'শ্রেণি';
 
     if (mode === 'grade') {
-        return `${schoolName}: প্রিয় অভিভাবক, ${result.studentName || 'আপনার সন্তান'} ${examLabel}-এ ${classText}-এ ${summary.gradeLetter ? `GPA ${summary.gpa} (${summary.gradeLetter})` : `মোট ${summary.total} নম্বর (গড় ${summary.average.toFixed(1)})`} পেয়েছে। ধন্যবাদ।`;
+        return `${schoolName}: প্রিয় অভিভাবক, ${result.studentName || 'আপনার সন্তান'} ${examLabel}-এ ${classText}-এ GPA ${summary.gpa} (${summary.gradeLetter}) পেয়েছে। ধন্যবাদ।`;
     }
     if (mode === 'custom') {
         return `${schoolName}: প্রিয় অভিভাবক, ${result.studentName || 'আপনার সন্তান'} এর বিষয়ে আপনার সঙ্গে যোগাযোগ প্রয়োজন।`;
     }
-    return `${schoolName}: প্রিয় অভিভাবক, ${result.studentName || 'আপনার সন্তান'} ${examLabel}-এ ${classText}, রোল ${result.roll || '-'} থেকে ${summary.gradeLetter ? `মোট ${summary.total} নম্বর এবং GPA ${summary.gpa} (${summary.gradeLetter})` : `মোট ${summary.total} নম্বর (গড় ${summary.average.toFixed(1)})`} পেয়েছে। ধন্যবাদ।`;
+    return `${schoolName}: প্রিয় অভিভাবক, ${result.studentName || 'আপনার সন্তান'} ${examLabel}-এ ${classText}, রোল ${result.roll || '-'} থেকে মোট ${summary.total} নম্বর এবং GPA ${summary.gpa} (${summary.gradeLetter}) পেয়েছে। ধন্যবাদ।`;
 }
 
 function openResultSmsModal(resultId) {
@@ -1031,7 +1031,7 @@ function openResultSmsModal(resultId) {
     document.getElementById('smsTemplateType').value = 'full';
     document.getElementById('smsStudentMeta').innerHTML = `
         <strong>${result.studentName || 'শিক্ষার্থী'}</strong> | রোল: ${result.roll || '-'} | ক্লাস: ${result.class || '-'}<br>
-        <small>${getAdminExamLabel(result.exam)} ${[result.month, result.year].filter(Boolean).join(' ')} | মোট: ${result.summary.total} ${result.summary.gradeLetter ? ` | GPA: ${result.summary.gpa} (${result.summary.gradeLetter})` : ` | গড়: ${result.summary.average.toFixed(1)}`}</small>`;
+        <small>${getAdminExamLabel(result.exam)} ${[result.month, result.year].filter(Boolean).join(' ')} | মোট: ${result.summary.total} | GPA: ${result.summary.gpa} (${result.summary.gradeLetter})</small>`;
     const warn = document.getElementById('smsPhoneWarning');
     if (!phone) {
         warn.style.display = 'block';
@@ -1437,7 +1437,7 @@ function downloadResultSheet() {
         { range: '60-69', grade: 'A-', gpa: '3.50' },
         { range: '50-59', grade: 'B', gpa: '3.00' },
         { range: '40-49', grade: 'C', gpa: '2.00' },
-        { range: '33-39', grade: 'D', gpa: '1.00' }
+        { range: '00-39', grade: 'D', gpa: '1.00' }
     ];
     
     const getOverallGrade = (average, fullMark) => {
@@ -1447,9 +1447,8 @@ function downloadResultSheet() {
         if (percent >= 60) return { grade: 'A-', gpa: '3.50' };
         if (percent >= 50) return { grade: 'B', gpa: '3.00' };
         if (percent >= 40) return { grade: 'C', gpa: '2.00' };
-        if (percent >= 33) return { grade: 'D', gpa: '1.00' };
-        // ৩৩%-এর নিচে হলে কোনো 'F'/ফেল দেখানো হয় না — শুধু প্রাপ্ত নম্বরই দেখানো হবে
-        return { grade: '', gpa: '' };
+        // সর্বনিম্ন গ্রেড D — কাউকে ফেল (F) দেখানো হয় না
+        return { grade: 'D', gpa: '1.00' };
     };
     
     const siteNameBn = (document.getElementById('setNameBn')?.value || '').trim() || 'মারকাজুল উলুম ক্যাডেট স্কুল ও মাদ্রাসা';
@@ -1498,11 +1497,9 @@ function downloadResultSheet() {
             r.gpa = gradeInfo.gpa;
         });
         
-        // পাশ/ফেল হিসাব দেখানো হয় না — নম্বরভিত্তিক তথ্য দেখানো হয়
-        const totals = results.map(r => r.total);
-        const highestMark = totals.length ? Math.max(...totals) : 0;
-        const lowestMark = totals.length ? Math.min(...totals) : 0;
-        const classAverage = totals.length ? (totals.reduce((a, b) => a + b, 0) / totals.length).toFixed(1) : '0.0';
+        // কাউকে ফেল দেখানো হয় না — সবাই পাশ, পাসের হার ১০০%
+        const passCount = results.length;
+        const passRate = results.length ? '100.00' : '0.00';
         
         let title = `ক্লাস ${classNames[cls] || cls} - ${examNames[exam] || exam}`;
         if (month && year) title += ` (${month} ${year})`;
@@ -1526,8 +1523,8 @@ function downloadResultSheet() {
                 ${subjectCells}
                 <td><strong>${r.total}</strong></td>
                 <td>${r.average.toFixed(1)}</td>
-                <td><strong>${r.gradeLetter || r.average.toFixed(1)}</strong></td>
-                <td>${r.gpa || '—'}</td>
+                <td><strong>${r.gradeLetter}</strong></td>
+                <td>${r.gpa}</td>
                 <td class="blank-cell"></td>
                 <td class="blank-cell"></td>
             </tr>`;
@@ -1653,7 +1650,7 @@ function downloadResultSheet() {
     }
     .meta-grid {
         display: grid;
-        grid-template-columns: repeat(7, minmax(0, 1fr));
+        grid-template-columns: repeat(6, minmax(0, 1fr));
         gap: 10px;
         margin-bottom: 14px;
     }
@@ -1818,15 +1815,14 @@ function downloadResultSheet() {
 
     <div class="meta-grid">
         <div class="meta-card"><span class="label">মোট পরীক্ষার্থী</span><span class="value">${results.length}</span></div>
-        <div class="meta-card"><span class="label">সর্বোচ্চ নম্বর</span><span class="value">${highestMark}</span></div>
-        <div class="meta-card"><span class="label">সর্বনিম্ন নম্বর</span><span class="value">${lowestMark}</span></div>
-        <div class="meta-card"><span class="label">শ্রেণির গড় নম্বর</span><span class="value">${classAverage}</span></div>
+        <div class="meta-card"><span class="label">মোট পাশ</span><span class="value">${passCount}</span></div>
+        <div class="meta-card"><span class="label">পাসের হার</span><span class="value">${passRate}%</span></div>
         <div class="meta-card"><span class="label">বিষয়ের সংখ্যা</span><span class="value">${subjectList.length}</span></div>
         <div class="meta-card"><span class="label">পূর্ণ নম্বর</span><span class="value">${fullMark}</span></div>
         <div class="meta-card"><span class="label">প্রিন্টের তারিখ</span><span class="value">${new Date().toLocaleDateString('bn-BD')}</span></div>
     </div>
 
-    <p class="note-line">নোট: "উপস্থিতি" ও "কার্য দিবস" ঘর প্রয়োজনে হাতে পূরণ করা যাবে। ৩৩ নম্বরের নিচে হলে গ্রেড লেটারের ঘরে শিক্ষার্থীর প্রাপ্ত গড় নম্বর দেখানো হয়।</p>
+    <p class="note-line">নোট: "উপস্থিতি" এবং "কার্য দিবস" ঘরগুলো প্রয়োজনে পরে হাতে পূরণ করা যাবে।</p>
 
     <div class="table-wrap">
         <table class="result-table">
