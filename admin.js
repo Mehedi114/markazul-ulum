@@ -34,6 +34,12 @@ function safeQuery(col, query, filterFn) {
     });
 }
 
+// Compare two stored/selected values safely (number vs string, extra space etc.)
+function sameFieldValue(a, b) {
+    const norm = v => (v === undefined || v === null) ? '' : String(v).trim();
+    return norm(a) === norm(b);
+}
+
 // Show a visible error message instead of a silent blank list
 function showLoadError(elId, err) {
     console.error('Load failed for ' + elId + ':', err);
@@ -826,8 +832,8 @@ function loadPreviousMarks(stuId, roll) {
             let existingResult = null;
             snap.forEach(doc => {
                 const r = doc.data();
-                const monthMatch = (!month && !r.month) || r.month === month;
-                const yearMatch = (!year && !r.year) || r.year === year || r.year === parseInt(year).toString();
+                const monthMatch = (!month && !r.month) || sameFieldValue(r.month, month);
+                const yearMatch = (!year && !r.year) || sameFieldValue(r.year, year);
                 if (monthMatch && yearMatch) {
                     existingResult = r;
                 }
@@ -880,8 +886,8 @@ function saveQuickResult(stuId, stuName, roll, photo) {
             let existingDoc = null;
             snap.forEach(doc => {
                 const r = doc.data();
-                const monthMatch = (!month && !r.month) || r.month === month;
-                const yearMatch = (!year && !r.year) || r.year === year || r.year === parseInt(year).toString();
+                const monthMatch = (!month && !r.month) || sameFieldValue(r.month, month);
+                const yearMatch = (!year && !r.year) || sameFieldValue(r.year, year);
                 if (monthMatch && yearMatch) {
                     existingDoc = doc;
                 }
@@ -1122,8 +1128,8 @@ function loadAdminResults() {
         let filtered = [];
         snap.forEach(doc => {
             const r = doc.data();
-            if (month && r.month !== month) return;
-            if (year && r.year !== year && r.year !== parseInt(year).toString()) return;
+            if (month && !sameFieldValue(r.month, month)) return;
+            if (year && !sameFieldValue(r.year, year)) return;
             const student = studentMap[normalizeDigitsToEnglish(r.roll)] || {};
             const phone = (student.phone || r.phone || '').trim();
             const summary = getResultSummaryData(r);
@@ -1464,8 +1470,8 @@ function downloadResultSheet() {
         
         snap.forEach(doc => {
             const r = doc.data();
-            if (filterMonth && r.month !== filterMonth) return;
-            if (filterYear && r.year !== filterYear && r.year !== parseInt(filterYear).toString()) return;
+            if (filterMonth && !sameFieldValue(r.month, filterMonth)) return;
+            if (filterYear && !sameFieldValue(r.year, filterYear)) return;
             
             if (r.fullMark) fullMark = parseInt(r.fullMark) || 100;
             let total = 0;
@@ -1859,18 +1865,151 @@ function downloadResultSheet() {
 </body>
 </html>`;
         
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) {
-            alert('Popup block হয়েছে। Live preview-তে এটা নাও কাজ করতে পারে, কিন্তু push করার পর normal hosting-এ কাজ করবে।');
-            return;
-        }
-        printWindow.document.open();
-        printWindow.document.write(htmlContent);
-        printWindow.document.close();
-        printWindow.focus();
+        const fileNameBase = `Result-${classNames[cls] || cls}-${examNames[exam] || exam}${month ? '-' + month : ''}${year ? '-' + year : ''}`.replace(/\s+/g, '_');
+        openResultSheetPreview(htmlContent, fileNameBase);
     }).catch(err => {
         console.error(err);
-        alert('সমস্যা হয়েছে!');
+        alert('সমস্যা হয়েছে! ' + (err && err.message ? err.message : ''));
+    });
+}
+
+// ============================================
+// RESULT SHEET PREVIEW + PDF DOWNLOAD
+// (popup window ব্যবহার করা হয় না, তাই popup blocker/mobile-এও কাজ করে)
+// ============================================
+let resultSheetFileName = 'Result-Sheet';
+
+function openResultSheetPreview(htmlContent, fileNameBase) {
+    resultSheetFileName = fileNameBase || 'Result-Sheet';
+    closeResultSheetPreview();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'resultSheetOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.75);display:flex;flex-direction:column;padding:10px;';
+
+    overlay.innerHTML = `
+        <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;padding:8px;background:#fff;border-radius:10px;margin-bottom:8px;">
+            <span id="resultSheetStatus" style="flex:1;min-width:160px;font-weight:700;color:#1a5632;font-size:14px;">ফলাফল শিট প্রস্তুত ✅</span>
+            <button type="button" onclick="downloadResultSheetPdf()" style="background:#1976d2;color:#fff;border:none;padding:10px 16px;border-radius:6px;font-family:inherit;font-weight:700;cursor:pointer;">📥 PDF ডাউনলোড</button>
+            <button type="button" onclick="printResultSheetPreview()" style="background:#1a5632;color:#fff;border:none;padding:10px 16px;border-radius:6px;font-family:inherit;font-weight:700;cursor:pointer;">🖨️ প্রিন্ট</button>
+            <button type="button" onclick="downloadResultSheetHtml()" style="background:#00897b;color:#fff;border:none;padding:10px 16px;border-radius:6px;font-family:inherit;font-weight:700;cursor:pointer;">🌐 HTML</button>
+            <button type="button" onclick="closeResultSheetPreview()" style="background:#c62828;color:#fff;border:none;padding:10px 16px;border-radius:6px;font-family:inherit;font-weight:700;cursor:pointer;">✕ বন্ধ</button>
+        </div>
+        <div style="flex:1;overflow:auto;background:#fff;border-radius:10px;padding:6px;">
+            <iframe id="resultSheetFrame" style="width:1240px;max-width:none;height:100%;min-height:520px;border:0;background:#fff;"></iframe>
+        </div>`;
+
+    document.body.appendChild(overlay);
+
+    const frame = document.getElementById('resultSheetFrame');
+    const doc = frame.contentWindow.document;
+    doc.open();
+    doc.write(htmlContent);
+    doc.close();
+
+    // store for HTML fallback download
+    overlay.dataset.ready = '1';
+    overlay._html = htmlContent;
+}
+
+function closeResultSheetPreview() {
+    const old = document.getElementById('resultSheetOverlay');
+    if (old) old.remove();
+}
+
+function setResultSheetStatus(text, color) {
+    const el = document.getElementById('resultSheetStatus');
+    if (el) {
+        el.textContent = text;
+        el.style.color = color || '#1a5632';
+    }
+}
+
+function printResultSheetPreview() {
+    const frame = document.getElementById('resultSheetFrame');
+    if (!frame) return;
+    try {
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+    } catch (e) {
+        console.error(e);
+        alert('প্রিন্ট করা যায়নি। "PDF ডাউনলোড" বাটন ব্যবহার করুন।');
+    }
+}
+
+function downloadResultSheetHtml() {
+    const overlay = document.getElementById('resultSheetOverlay');
+    if (!overlay || !overlay._html) return;
+    const blob = new Blob([overlay._html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = resultSheetFileName + '.html';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    setResultSheetStatus('HTML ফাইল ডাউনলোড হয়েছে ✅');
+}
+
+function downloadResultSheetPdf() {
+    const frame = document.getElementById('resultSheetFrame');
+    if (!frame) return;
+
+    const jsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    if (typeof html2canvas === 'undefined' || !jsPDFCtor) {
+        alert('PDF লাইব্রেরি লোড হয়নি (ইন্টারনেট সমস্যা)। "প্রিন্ট" বাটন দিয়ে Save as PDF করুন।');
+        return;
+    }
+
+    setResultSheetStatus('⏳ PDF তৈরি হচ্ছে, একটু অপেক্ষা করুন...', '#1976d2');
+
+    const doc = frame.contentWindow.document;
+    const fontsReady = (doc.fonts && doc.fonts.ready) ? doc.fonts.ready : Promise.resolve();
+
+    fontsReady.then(() => new Promise(res => setTimeout(res, 350))).then(() => {
+        const body = doc.body;
+        return html2canvas(body, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            allowTaint: false,
+            logging: false,
+            windowWidth: 1240,
+            width: Math.max(body.scrollWidth, 1240),
+            height: body.scrollHeight
+        });
+    }).then(canvas => {
+        const pdf = new jsPDFCtor({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        const pageW = 297, pageH = 210, margin = 6;
+        const usableW = pageW - margin * 2;
+        const usableH = pageH - margin * 2;
+        const pxPerMm = canvas.width / usableW;
+        const pageHpx = Math.floor(usableH * pxPerMm);
+
+        let y = 0, first = true;
+        while (y < canvas.height) {
+            const sliceH = Math.min(pageHpx, canvas.height - y);
+            const slice = document.createElement('canvas');
+            slice.width = canvas.width;
+            slice.height = sliceH;
+            const ctx = slice.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, slice.width, slice.height);
+            ctx.drawImage(canvas, 0, y, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+            const imgData = slice.toDataURL('image/jpeg', 0.92);
+            if (!first) pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', margin, margin, usableW, sliceH / pxPerMm);
+            first = false;
+            y += sliceH;
+        }
+
+        pdf.save(resultSheetFileName + '.pdf');
+        setResultSheetStatus('PDF ডাউনলোড হয়েছে ✅');
+    }).catch(err => {
+        console.error('PDF তৈরি ব্যর্থ:', err);
+        setResultSheetStatus('❌ PDF তৈরি করা যায়নি — "প্রিন্ট" দিয়ে Save as PDF করুন', '#c62828');
+        alert('PDF তৈরি করা যায়নি। "🖨️ প্রিন্ট" বাটন থেকে "Save as PDF" নির্বাচন করুন।');
     });
 }
 
