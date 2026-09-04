@@ -991,7 +991,7 @@ function getResultSummaryData(result) {
     }
     const average = count ? total / count : 0;
     const percent = fullMark ? (average / fullMark) * 100 : 0;
-    let gradeLetter = 'F', gpa = '0.00';
+    let gradeLetter = '', gpa = ''; // 33%-এর নিচে হলে F/ফেল নয় — গ্রেড ফাঁকা, শুধু নম্বর
     if (percent >= 80) { gradeLetter = 'A+'; gpa = '5.00'; }
     else if (percent >= 70) { gradeLetter = 'A'; gpa = '4.00'; }
     else if (percent >= 60) { gradeLetter = 'A-'; gpa = '3.50'; }
@@ -1010,12 +1010,12 @@ function buildResultSmsText(result, mode = 'full') {
     const classText = result.class ? `শ্রেণি ${result.class}` : 'শ্রেণি';
 
     if (mode === 'grade') {
-        return `${schoolName}: প্রিয় অভিভাবক, ${result.studentName || 'আপনার সন্তান'} ${examLabel}-এ ${classText}-এ GPA ${summary.gpa} (${summary.gradeLetter}) পেয়েছে। ধন্যবাদ।`;
+        return `${schoolName}: প্রিয় অভিভাবক, ${result.studentName || 'আপনার সন্তান'} ${examLabel}-এ ${classText}-এ ${summary.gradeLetter ? `GPA ${summary.gpa} (${summary.gradeLetter})` : `মোট ${summary.total} নম্বর (গড় ${summary.average.toFixed(1)})`} পেয়েছে। ধন্যবাদ।`;
     }
     if (mode === 'custom') {
         return `${schoolName}: প্রিয় অভিভাবক, ${result.studentName || 'আপনার সন্তান'} এর বিষয়ে আপনার সঙ্গে যোগাযোগ প্রয়োজন।`;
     }
-    return `${schoolName}: প্রিয় অভিভাবক, ${result.studentName || 'আপনার সন্তান'} ${examLabel}-এ ${classText}, রোল ${result.roll || '-'} থেকে মোট ${summary.total} নম্বর এবং GPA ${summary.gpa} (${summary.gradeLetter}) পেয়েছে। ধন্যবাদ।`;
+    return `${schoolName}: প্রিয় অভিভাবক, ${result.studentName || 'আপনার সন্তান'} ${examLabel}-এ ${classText}, রোল ${result.roll || '-'} থেকে ${summary.gradeLetter ? `মোট ${summary.total} নম্বর এবং GPA ${summary.gpa} (${summary.gradeLetter})` : `মোট ${summary.total} নম্বর (গড় ${summary.average.toFixed(1)})`} পেয়েছে। ধন্যবাদ।`;
 }
 
 function openResultSmsModal(resultId) {
@@ -1031,7 +1031,7 @@ function openResultSmsModal(resultId) {
     document.getElementById('smsTemplateType').value = 'full';
     document.getElementById('smsStudentMeta').innerHTML = `
         <strong>${result.studentName || 'শিক্ষার্থী'}</strong> | রোল: ${result.roll || '-'} | ক্লাস: ${result.class || '-'}<br>
-        <small>${getAdminExamLabel(result.exam)} ${[result.month, result.year].filter(Boolean).join(' ')} | মোট: ${result.summary.total} | GPA: ${result.summary.gpa} (${result.summary.gradeLetter})</small>`;
+        <small>${getAdminExamLabel(result.exam)} ${[result.month, result.year].filter(Boolean).join(' ')} | মোট: ${result.summary.total} ${result.summary.gradeLetter ? ` | GPA: ${result.summary.gpa} (${result.summary.gradeLetter})` : ` | গড়: ${result.summary.average.toFixed(1)}`}</small>`;
     const warn = document.getElementById('smsPhoneWarning');
     if (!phone) {
         warn.style.display = 'block';
@@ -1437,8 +1437,7 @@ function downloadResultSheet() {
         { range: '60-69', grade: 'A-', gpa: '3.50' },
         { range: '50-59', grade: 'B', gpa: '3.00' },
         { range: '40-49', grade: 'C', gpa: '2.00' },
-        { range: '33-39', grade: 'D', gpa: '1.00' },
-        { range: '00-32', grade: 'F', gpa: '0.00' }
+        { range: '33-39', grade: 'D', gpa: '1.00' }
     ];
     
     const getOverallGrade = (average, fullMark) => {
@@ -1449,7 +1448,8 @@ function downloadResultSheet() {
         if (percent >= 50) return { grade: 'B', gpa: '3.00' };
         if (percent >= 40) return { grade: 'C', gpa: '2.00' };
         if (percent >= 33) return { grade: 'D', gpa: '1.00' };
-        return { grade: 'F', gpa: '0.00' };
+        // ৩৩%-এর নিচে হলে কোনো 'F'/ফেল দেখানো হয় না — শুধু প্রাপ্ত নম্বরই দেখানো হবে
+        return { grade: '', gpa: '' };
     };
     
     const siteNameBn = (document.getElementById('setNameBn')?.value || '').trim() || 'মারকাজুল উলুম ক্যাডেট স্কুল ও মাদ্রাসা';
@@ -1498,9 +1498,11 @@ function downloadResultSheet() {
             r.gpa = gradeInfo.gpa;
         });
         
-        const passCount = results.filter(r => r.gradeLetter !== 'F').length;
-        const failCount = results.length - passCount;
-        const passRate = results.length ? ((passCount / results.length) * 100).toFixed(2) : '0.00';
+        // পাশ/ফেল হিসাব দেখানো হয় না — নম্বরভিত্তিক তথ্য দেখানো হয়
+        const totals = results.map(r => r.total);
+        const highestMark = totals.length ? Math.max(...totals) : 0;
+        const lowestMark = totals.length ? Math.min(...totals) : 0;
+        const classAverage = totals.length ? (totals.reduce((a, b) => a + b, 0) / totals.length).toFixed(1) : '0.0';
         
         let title = `ক্লাস ${classNames[cls] || cls} - ${examNames[exam] || exam}`;
         if (month && year) title += ` (${month} ${year})`;
@@ -1524,8 +1526,8 @@ function downloadResultSheet() {
                 ${subjectCells}
                 <td><strong>${r.total}</strong></td>
                 <td>${r.average.toFixed(1)}</td>
-                <td><strong>${r.gradeLetter}</strong></td>
-                <td>${r.gpa}</td>
+                <td><strong>${r.gradeLetter || r.average.toFixed(1)}</strong></td>
+                <td>${r.gpa || '—'}</td>
                 <td class="blank-cell"></td>
                 <td class="blank-cell"></td>
             </tr>`;
@@ -1816,15 +1818,15 @@ function downloadResultSheet() {
 
     <div class="meta-grid">
         <div class="meta-card"><span class="label">মোট পরীক্ষার্থী</span><span class="value">${results.length}</span></div>
-        <div class="meta-card"><span class="label">মোট পাশ</span><span class="value">${passCount}</span></div>
-        <div class="meta-card"><span class="label">মোট ফেল</span><span class="value">${failCount}</span></div>
-        <div class="meta-card"><span class="label">পাসের হার</span><span class="value">${passRate}%</span></div>
+        <div class="meta-card"><span class="label">সর্বোচ্চ নম্বর</span><span class="value">${highestMark}</span></div>
+        <div class="meta-card"><span class="label">সর্বনিম্ন নম্বর</span><span class="value">${lowestMark}</span></div>
+        <div class="meta-card"><span class="label">শ্রেণির গড় নম্বর</span><span class="value">${classAverage}</span></div>
         <div class="meta-card"><span class="label">বিষয়ের সংখ্যা</span><span class="value">${subjectList.length}</span></div>
         <div class="meta-card"><span class="label">পূর্ণ নম্বর</span><span class="value">${fullMark}</span></div>
         <div class="meta-card"><span class="label">প্রিন্টের তারিখ</span><span class="value">${new Date().toLocaleDateString('bn-BD')}</span></div>
     </div>
 
-    <p class="note-line">নোট: "উপস্থিতি" এবং "কার্য দিবস" ঘরগুলো প্রয়োজনে পরে হাতে পূরণ করা যাবে।</p>
+    <p class="note-line">নোট: "উপস্থিতি" ও "কার্য দিবস" ঘর প্রয়োজনে হাতে পূরণ করা যাবে। ৩৩ নম্বরের নিচে হলে গ্রেড লেটারের ঘরে শিক্ষার্থীর প্রাপ্ত গড় নম্বর দেখানো হয়।</p>
 
     <div class="table-wrap">
         <table class="result-table">
@@ -1889,8 +1891,10 @@ const RESULT_PAPER_SIZES = {
 };
 
 function getResultSheetPageSetup() {
-    const sizeKey = (document.getElementById('resultSheetSize')?.value) || 'a4';
-    const orientation = (document.getElementById('resultSheetOrient')?.value) || 'landscape';
+    const sizeKey = (document.getElementById('resultSheetSize')?.value)
+        || (document.getElementById('sheetSizeMain')?.value) || 'a4';
+    const orientation = (document.getElementById('resultSheetOrient')?.value)
+        || (document.getElementById('sheetOrientMain')?.value) || 'landscape';
     const paper = RESULT_PAPER_SIZES[sizeKey] || RESULT_PAPER_SIZES.a4;
     const pageW = orientation === 'portrait' ? paper.w : paper.h;
     const pageH = orientation === 'portrait' ? paper.h : paper.w;
@@ -1918,6 +1922,13 @@ function applyResultSheetPageSetup() {
     frame.dataset.captureWidth = previewWidth;
 
     try { localStorage.setItem('rsPaper', setup.sizeKey + '|' + setup.orientation); } catch (e) {}
+
+    // ফলাফল ট্যাবের সিলেক্টগুলোর সঙ্গে মিলিয়ে রাখো
+    const mainSize = document.getElementById('sheetSizeMain');
+    const mainOrient = document.getElementById('sheetOrientMain');
+    if (mainSize) mainSize.value = setup.sizeKey;
+    if (mainOrient) mainOrient.value = setup.orientation;
+
     setResultSheetStatus(`কাগজ: ${setup.label} — ${setup.orientation === 'portrait' ? 'পোর্ট্রেট' : 'ল্যান্ডস্কেপ'}`);
 }
 
@@ -1931,6 +1942,11 @@ function openResultSheetPreview(htmlContent, fileNameBase) {
         if (RESULT_PAPER_SIZES[saved[0]]) savedSize = saved[0];
         if (saved[1] === 'portrait' || saved[1] === 'landscape') savedOrient = saved[1];
     } catch (e) {}
+    // ফলাফল ট্যাবে সিলেক্ট করা মান সবসময় অগ্রাধিকার পাবে
+    const mainSizeVal = document.getElementById('sheetSizeMain')?.value;
+    const mainOrientVal = document.getElementById('sheetOrientMain')?.value;
+    if (RESULT_PAPER_SIZES[mainSizeVal]) savedSize = mainSizeVal;
+    if (mainOrientVal === 'portrait' || mainOrientVal === 'landscape') savedOrient = mainOrientVal;
     const sizeOptions = Object.keys(RESULT_PAPER_SIZES).map(k =>
         `<option value="${k}"${k === savedSize ? ' selected' : ''}>${RESULT_PAPER_SIZES[k].label}</option>`).join('');
 

@@ -1,9 +1,9 @@
-const CACHE_NAME = 'markazul-ulum-v4';
+const CACHE_NAME = 'markazul-ulum-v5';
 const urlsToCache = [
     './',
     './index.html',
     './style.css',
-    './app.js',
+    './app.js?v=5',
     'https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700;800&display=swap',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css'
 ];

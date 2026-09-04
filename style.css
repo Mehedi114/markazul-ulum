@@ -430,6 +430,8 @@ marquee { color: #bf360c; font-weight: 500; font-size: 15px; }
 .grade-b { color: #1565c0; font-weight: 600; }
 .grade-c { color: #e65100; font-weight: 600; }
 .grade-f { color: #c62828; font-weight: 700; }
+/* ৩৩-এর নিচে নম্বর পেলে F নয়, প্রাপ্ত নম্বর দেখানো হয় */
+.grade-mark { color: #333; font-weight: 700; }
 
 /* === TOPPERS === */
 .topper-grid {
