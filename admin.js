@@ -1879,21 +1879,83 @@ function downloadResultSheet() {
 // ============================================
 let resultSheetFileName = 'Result-Sheet';
 
+// কাগজের সাইজ (mm, portrait হিসেবে width x height)
+const RESULT_PAPER_SIZES = {
+    a4:     { label: 'A4 (২১০×২৯৭ মি.মি.)',   w: 210,   h: 297 },
+    a3:     { label: 'A3 (২৯৭×৪২০ মি.মি.)',   w: 297,   h: 420 },
+    legal:  { label: 'Legal (২১৬×৩৫৬)',        w: 215.9, h: 355.6 },
+    letter: { label: 'Letter (২১৬×২৭৯)',       w: 215.9, h: 279.4 },
+    a5:     { label: 'A5 (১৪৮×২১০ মি.মি.)',   w: 148,   h: 210 }
+};
+
+function getResultSheetPageSetup() {
+    const sizeKey = (document.getElementById('resultSheetSize')?.value) || 'a4';
+    const orientation = (document.getElementById('resultSheetOrient')?.value) || 'landscape';
+    const paper = RESULT_PAPER_SIZES[sizeKey] || RESULT_PAPER_SIZES.a4;
+    const pageW = orientation === 'portrait' ? paper.w : paper.h;
+    const pageH = orientation === 'portrait' ? paper.h : paper.w;
+    return { sizeKey, orientation, pageW, pageH, label: paper.label };
+}
+
+// iframe-এর ভিতরের @page rule + প্রিভিউ প্রস্থ সিলেক্ট করা সাইজ অনুযায়ী বদলে দেয়
+function applyResultSheetPageSetup() {
+    const frame = document.getElementById('resultSheetFrame');
+    if (!frame || !frame.contentWindow) return;
+    const setup = getResultSheetPageSetup();
+    const doc = frame.contentWindow.document;
+
+    let styleEl = doc.getElementById('rsPageStyle');
+    if (!styleEl) {
+        styleEl = doc.createElement('style');
+        styleEl.id = 'rsPageStyle';
+        doc.head.appendChild(styleEl);
+    }
+    styleEl.textContent = `@page { size: ${setup.sizeKey.toUpperCase()} ${setup.orientation}; margin: 8mm; }`;
+
+    // প্রিভিউ যেন প্রিন্টের অনুপাতের কাছাকাছি দেখায়
+    const previewWidth = setup.orientation === 'portrait' ? 980 : 1240;
+    frame.style.width = previewWidth + 'px';
+    frame.dataset.captureWidth = previewWidth;
+
+    try { localStorage.setItem('rsPaper', setup.sizeKey + '|' + setup.orientation); } catch (e) {}
+    setResultSheetStatus(`কাগজ: ${setup.label} — ${setup.orientation === 'portrait' ? 'পোর্ট্রেট' : 'ল্যান্ডস্কেপ'}`);
+}
+
 function openResultSheetPreview(htmlContent, fileNameBase) {
     resultSheetFileName = fileNameBase || 'Result-Sheet';
     closeResultSheetPreview();
+
+    let savedSize = 'a4', savedOrient = 'landscape';
+    try {
+        const saved = (localStorage.getItem('rsPaper') || '').split('|');
+        if (RESULT_PAPER_SIZES[saved[0]]) savedSize = saved[0];
+        if (saved[1] === 'portrait' || saved[1] === 'landscape') savedOrient = saved[1];
+    } catch (e) {}
+    const sizeOptions = Object.keys(RESULT_PAPER_SIZES).map(k =>
+        `<option value="${k}"${k === savedSize ? ' selected' : ''}>${RESULT_PAPER_SIZES[k].label}</option>`).join('');
 
     const overlay = document.createElement('div');
     overlay.id = 'resultSheetOverlay';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.75);display:flex;flex-direction:column;padding:10px;';
 
     overlay.innerHTML = `
-        <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;padding:8px;background:#fff;border-radius:10px;margin-bottom:8px;">
-            <span id="resultSheetStatus" style="flex:1;min-width:160px;font-weight:700;color:#1a5632;font-size:14px;">ফলাফল শিট প্রস্তুত ✅</span>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px;background:#fff;border-radius:10px;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+                <label style="font-size:13px;font-weight:700;color:#333;">📄 কাগজ</label>
+                <select id="resultSheetSize" onchange="applyResultSheetPageSetup()" style="padding:8px;border:2px solid #ddd;border-radius:6px;font-family:inherit;font-size:13px;">${sizeOptions}</select>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+                <label style="font-size:13px;font-weight:700;color:#333;">🧭 দিক</label>
+                <select id="resultSheetOrient" onchange="applyResultSheetPageSetup()" style="padding:8px;border:2px solid #ddd;border-radius:6px;font-family:inherit;font-size:13px;">
+                    <option value="landscape"${savedOrient === 'landscape' ? ' selected' : ''}>ল্যান্ডস্কেপ (আড়াআড়ি)</option>
+                    <option value="portrait"${savedOrient === 'portrait' ? ' selected' : ''}>পোর্ট্রেট (লম্বালম্বি)</option>
+                </select>
+            </div>
             <button type="button" onclick="downloadResultSheetPdf()" style="background:#1976d2;color:#fff;border:none;padding:10px 16px;border-radius:6px;font-family:inherit;font-weight:700;cursor:pointer;">📥 PDF ডাউনলোড</button>
             <button type="button" onclick="printResultSheetPreview()" style="background:#1a5632;color:#fff;border:none;padding:10px 16px;border-radius:6px;font-family:inherit;font-weight:700;cursor:pointer;">🖨️ প্রিন্ট</button>
             <button type="button" onclick="downloadResultSheetHtml()" style="background:#00897b;color:#fff;border:none;padding:10px 16px;border-radius:6px;font-family:inherit;font-weight:700;cursor:pointer;">🌐 HTML</button>
             <button type="button" onclick="closeResultSheetPreview()" style="background:#c62828;color:#fff;border:none;padding:10px 16px;border-radius:6px;font-family:inherit;font-weight:700;cursor:pointer;">✕ বন্ধ</button>
+            <span id="resultSheetStatus" style="flex:1 1 100%;font-weight:700;color:#1a5632;font-size:13px;">ফলাফল শিট প্রস্তুত ✅ — দোকানে A4 প্রিন্টের জন্য <b>A4 + ল্যান্ডস্কেপ</b> রাখুন (বিষয় বেশি হলে সব কলাম সুন্দরভাবে আঁটে)।</span>
         </div>
         <div style="flex:1;overflow:auto;background:#fff;border-radius:10px;padding:6px;">
             <iframe id="resultSheetFrame" style="width:1240px;max-width:none;height:100%;min-height:520px;border:0;background:#fff;"></iframe>
@@ -1910,6 +1972,9 @@ function openResultSheetPreview(htmlContent, fileNameBase) {
     // store for HTML fallback download
     overlay.dataset.ready = '1';
     overlay._html = htmlContent;
+
+    // সিলেক্ট করা কাগজ/দিক প্রিভিউ ও প্রিন্টে প্রয়োগ করো
+    setTimeout(applyResultSheetPageSetup, 60);
 }
 
 function closeResultSheetPreview() {
@@ -1964,6 +2029,8 @@ function downloadResultSheetPdf() {
 
     setResultSheetStatus('⏳ PDF তৈরি হচ্ছে, একটু অপেক্ষা করুন...', '#1976d2');
 
+    const setup = getResultSheetPageSetup();
+    const captureWidth = parseInt(frame.dataset.captureWidth) || (setup.orientation === 'portrait' ? 980 : 1240);
     const doc = frame.contentWindow.document;
     const fontsReady = (doc.fonts && doc.fonts.ready) ? doc.fonts.ready : Promise.resolve();
 
@@ -1975,13 +2042,13 @@ function downloadResultSheetPdf() {
             useCORS: true,
             allowTaint: false,
             logging: false,
-            windowWidth: 1240,
-            width: Math.max(body.scrollWidth, 1240),
+            windowWidth: captureWidth,
+            width: Math.max(body.scrollWidth, captureWidth),
             height: body.scrollHeight
         });
     }).then(canvas => {
-        const pdf = new jsPDFCtor({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-        const pageW = 297, pageH = 210, margin = 6;
+        const pdf = new jsPDFCtor({ orientation: setup.orientation, unit: 'mm', format: setup.sizeKey });
+        const pageW = setup.pageW, pageH = setup.pageH, margin = 6;
         const usableW = pageW - margin * 2;
         const usableH = pageH - margin * 2;
         const pxPerMm = canvas.width / usableW;
@@ -2004,8 +2071,8 @@ function downloadResultSheetPdf() {
             y += sliceH;
         }
 
-        pdf.save(resultSheetFileName + '.pdf');
-        setResultSheetStatus('PDF ডাউনলোড হয়েছে ✅');
+        pdf.save(`${resultSheetFileName}-${setup.sizeKey.toUpperCase()}-${setup.orientation === 'portrait' ? 'Portrait' : 'Landscape'}.pdf`);
+        setResultSheetStatus(`PDF ডাউনলোড হয়েছে ✅ (${setup.sizeKey.toUpperCase()} ${setup.orientation === 'portrait' ? 'পোর্ট্রেট' : 'ল্যান্ডস্কেপ'})`);
     }).catch(err => {
         console.error('PDF তৈরি ব্যর্থ:', err);
         setResultSheetStatus('❌ PDF তৈরি করা যায়নি — "প্রিন্ট" দিয়ে Save as PDF করুন', '#c62828');
